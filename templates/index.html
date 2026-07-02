@@ -33,8 +33,9 @@
         <h3 class="heading mb-sm-5 mb-4 text-center">Upload an Image for Disease Prediction</h3>
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <form id="upload-file" method="post" enctype="multipart/form-data" action="{{ url_for('upload') }}">
-                    <label for="file" bold >Select Image: <br> Click On below tab To select Image</label>
+                <form id="upload-file" method="post" enctype="multipart/form-data" action="{{ url_for('disease.disease_prediction') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label for="file"><strong>Select Image:</strong> <br> Click On below tab To select Image</label>
                     <input type="file" name="file" id="file" accept=".png, .jpg, .jpeg" required class="form-control mb-3">
                     <button type="submit" class="btn btn-primary btn-lg">Predict!</button>
                 </form>
@@ -54,7 +55,7 @@
         <div class="row blog-grids">
             <div class="col-lg-4 col-md-6 blog-left mb-lg-0 mb-sm-5 pb-lg-0 pb-5">
                 <img src="{{ url_for('static', filename='images/s3.jpg') }}" class="img-fluid" alt="" />
-                <a href="{{ url_for('crop_recommend') }}">
+                <a href="{{ url_for('crop.crop_recommend') }}">
                     <div class="blog-info">
                         <h4>Crop</h4>
                         <p class="mt-2">Recommendation about the type of crops to be cultivated which is best suited for the respective conditions</p>
@@ -63,7 +64,7 @@
             </div>
             <div class="col-lg-4 col-md-6 blog-middle mb-lg-0 mb-sm-5 pb-lg-0 pb-md-5">
                 <img src="{{ url_for('static', filename='images/s2.jpg') }}" class="img-fluid" alt="" />
-                <a href="{{ url_for('fertilizer_recommendation') }}">
+                <a href="{{ url_for('fertilizer.fertilizer_page') }}">
                     <div class="blog-info">
                         <h4>Fertilizer</h4>
                         <p class="mt-2">Recommendation about the type of fertilizer best suited for the particular soil and the recommended crop</p>
@@ -72,7 +73,7 @@
             </div>
             <div class="col-lg-4 col-md-6 blog-right mt-lg-0 mt-5 pt-lg-0 pt-md-5">
                 <img src="{{ url_for('static', filename='images/s4.jpg') }}" class="img-fluid" alt="">
-                <a href="{{ url_for('disease_prediction') }}">
+                <a href="{{ url_for('disease.disease_prediction') }}">
                     <div class="blog-info">
                         <h4>Crop Disease</h4>
                         <p class="mt-2">Predicting the name and causes of crop disease and suggestions to cure it</p>
@@ -108,11 +109,11 @@
         <div class="row">
             <div class="col-lg-6">
                 <h4>List of Crops on which the model can be used for prediction</h4>
-                <img src="{{url_for('static', filename='screenshot_3.png')}}" class="img-fluid" alt="List of Crops" />
+	                <img src="{{url_for('static', filename='Screenshot_3.png')}}" class="img-fluid" alt="List of Crops" />
             </div>
             <div class="col-lg-6">
                 <h4>List of Crop Diseases on which the model can be used for prediction</h4>
-                <img src="{{url_for('static', filename='screenshot_2.png')}}" class="img-fluid" alt="List of Diseases" />
+	                <img src="{{url_for('static', filename='Screenshot_2.png')}}" class="img-fluid" alt="List of Diseases" />
             </div>
         </div>
     </div>

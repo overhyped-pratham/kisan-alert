@@ -1,0 +1,119 @@
+{% extends 'layout.html' %}
+{% block body %}
+
+<!-- Link to custom KrishiSaar styles -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/krishisaar.css') }}" />
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="ks-glass-card ks-bg-gradient p-5 text-center mb-4" style="border-radius: 24px;">
+                <div class="mb-3">
+                    <span class="badge badge-success px-3 py-2" style="font-size: 14px; border-radius: 20px;">AI Prediction: {{ model_name }}</span>
+                </div>
+                <h1 style="font-size: 42px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
+                    {{ crop_name.title() }}
+                </h1>
+                <p class="lead" style="opacity: 0.9;">Is the most optimal crop recommended for your farm conditions.</p>
+                
+                <div class="row mt-4 justify-content-center">
+                    <div class="col-4 border-right">
+                        <h4 class="mb-0" style="font-weight: 700; color: #2ecc71;">{{ (confidence * 100) | round(1) }}%</h4>
+                        <small style="opacity: 0.8;">Confidence</small>
+                    </div>
+                    <div class="col-4 border-right">
+                        <h4 class="mb-0" style="font-weight: 700; color: #f39c12;">{{ profitability }}/10</h4>
+                        <small style="opacity: 0.8;">Profitability Index</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="mb-0" style="font-weight: 700; color: #3498db;">{{ water_requirement }}</h4>
+                        <small style="opacity: 0.8;">Water Needs</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Recommendation Details -->
+            <div class="ks-glass-card">
+                <h3 class="ks-gradient-text mb-4"><i class="fas fa-seedling"></i> Agricultural Intelligence Advisory</h3>
+                
+                <div class="row">
+                    <!-- Soil and Weather Inputs Used -->
+                    <div class="col-md-6 mb-4">
+                        <div class="p-3 bg-light rounded h-100">
+                            <h5 style="font-weight: 600; color: var(--primary-green);" class="mb-3"><i class="fas fa-sliders-h"></i> Input Parameters</h5>
+                            <table class="table table-sm table-borderless mb-0" style="font-size: 14px;">
+                                <tr>
+                                    <td><strong>Location:</strong></td>
+                                    <td>{{ inputs.location.title() }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Season:</strong></td>
+                                    <td>{{ inputs.season.title() }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>NPK Levels:</strong></td>
+                                    <td>N:{{ inputs.N }}, P:{{ inputs.P }}, K:{{ inputs.K }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Soil pH:</strong></td>
+                                    <td>{{ inputs.ph }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Weather Temp:</strong></td>
+                                    <td>{{ inputs.temperature | round(1) }}°C</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Weather Humidity:</strong></td>
+                                    <td>{{ inputs.humidity }}%</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Satellite Data Analysis -->
+                    <div class="col-md-6 mb-4">
+                        <div class="p-3 bg-light rounded h-100">
+                            <h5 style="font-weight: 600; color: var(--primary-green);" class="mb-3"><i class="fas fa-satellite"></i> Satellite Telemetry (Demo)</h5>
+                            <table class="table table-sm table-borderless mb-0" style="font-size: 14px;">
+                                <tr>
+                                    <td><strong>Veg Index (NDVI):</strong></td>
+                                    <td><span class="text-success font-weight-bold">0.68 (Healthy)</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Soil Moisture Index:</strong></td>
+                                    <td><span class="text-success font-weight-bold">0.42 (Optimal)</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Canopy Temperature:</strong></td>
+                                    <td>{{ (inputs.temperature - 1.5) | round(1) }}°C</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Expected Yield:</strong></td>
+                                    <td class="font-weight-bold text-success">{{ expected_yield }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Fertilizer Recommendations -->
+                <div class="mb-4">
+                    <h5 style="font-weight: 700; color: var(--primary-green);"><i class="fas fa-flask"></i> Fertilizer & Nutrition Plan</h5>
+                    <p class="mt-2">{{ fertilizer_recommendation }}</p>
+                </div>
+
+                <hr>
+
+                <!-- Actions -->
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a href="{{ url_for('crop.crop_recommend') }}" class="btn btn-outline-success ks-btn"><i class="fas fa-arrow-left"></i> Predict Again</a>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-success ks-btn ks-btn-primary"><i class="fas fa-home"></i> Go to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

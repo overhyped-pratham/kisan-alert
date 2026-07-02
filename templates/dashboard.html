@@ -3,478 +3,577 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Farmer Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
-    <script src="https://unpkg.com/i18next@21.6.0/i18next.min.js"></script>
-<script src="https://unpkg.com/i18next-browser-languagedetector@6.1.0/i18nextBrowserLanguageDetector.min.js"></script>
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles_dashboard.css') }}" />
+    <title>KrishiSaar AI - Farmer Dashboard</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/planting.ico') }}"/>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/krishisaar.css') }}" />
     <style>
-        /* Additional inline styles for quick adjustments */
-        .chart-container {
-            margin-top: 20px;
+        .sidebar {
+            background: linear-gradient(180deg, #1b4d3e 0%, #113327 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 30px 20px;
         }
-        .chart {
-            height: 400px;
+        .sidebar-menu li {
+            list-style: none;
+            margin-bottom: 12px;
+        }
+        .sidebar-menu li a {
+            color: rgba(255,255,255,0.8);
+            display: block;
+            padding: 12px 16px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .sidebar-menu li a:hover, .sidebar-menu li.active a {
+            background: rgba(255,255,255,0.15);
+            color: #2ecc71;
+            transform: translateX(5px);
+        }
+        .main-content {
+            padding: 30px;
         }
     </style>
 </head>
 <body>
     <div class="container-fluid">
         <div class="row">
-            <aside class="col-md-3 sidebar bg-light">
-                <div class="sidebar-header text-center">
-                    <h1><i class="fas fa-leaf"></i> Green Points</h1>
-                    <h2>Dashboard</h2>
+            <!-- Sidebar Navigation -->
+            <aside class="col-md-3 sidebar">
+                <div class="text-center mb-5">
+                    <h2 class="font-weight-bold text-white"><i class="fas fa-leaf text-success"></i> KrishiSaar AI</h2>
+                    <span style="font-size: 13px; color: #2ecc71; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">AI Agricultural Copilot</span>
                 </div>
-                <ul class="sidebar-menu list-group">
-                    <li class="list-group-item"><a href="#" onclick="showPage('farmers')">Farmers</a></li>
-                    <li class="list-group-item"><a href="#" onclick="showPage('weather')">Weather</a></li>
-                    <li class="list-group-item"><a href="#" onclick="showPage('crops')">Crop Analysis</a></li>
-                    <li class="list-group-item"><a href="#" onclick="showPage('disease')">Disease Analysis</a></li>
-                    <li class="list-group-item"><a href="#" onclick="showPage('yearly')">Yearly Plan</a></li>
+                
+                <ul class="sidebar-menu p-0">
+                    <li class="active"><a href="#" onclick="switchTab('dashboard')"><i class="fas fa-th-large mr-2"></i> Dashboard</a></li>
+                    <li><a href="{{ url_for('crop.crop_recommend') }}"><i class="fas fa-seedling mr-2"></i> Crop Recommendation</a></li>
+                    <li><a href="{{ url_for('disease.disease_prediction') }}"><i class="fas fa-virus mr-2"></i> Disease Analysis</a></li>
+                    <li><a href="{{ url_for('sms.sms_simulator') }}"><i class="fas fa-sms mr-2"></i> SMS Advisory</a></li>
+                    <li><a href="{{ url_for('expert.expert_portal') }}"><i class="fas fa-user-shield mr-2"></i> RSK Expert Portal</a></li>
+                    <li><a href="{{ url_for('auth.logout') }}" class="text-danger"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a></li>
                 </ul>
             </aside>
+
+            <!-- Main Content Area -->
             <main class="col-md-9 main-content">
-                <header class="main-header">
-                    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-                        <a class="navbar-brand" href="/">Green Points</a>
-                        <ul class="navbar-nav ml-auto">
-                            
-                            <div id="google_translate_element"></div>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Signup</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('crop_recommend') }}">Crop</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('fertilizer_recommendation') }}">Fertilizer</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('disease_prediction') }}">Disease</a></li>
-                            <li class="nav-item"><a href="/logout" class="btn btn-dark">Logout</a></li>
-                        </ul>
-                    </nav>
+                <header class="d-flex justify-content-between align-items-center mb-5 pb-3 border-bottom">
+                    <div>
+                        <h4 class="font-weight-bold">Welcome, {{ user.name.title() }}!</h4>
+                        <p class="text-muted mb-0">District: {{ user.district or 'Pune' }} • Village: {{ user.village or 'Haveli' }}</p>
+                    </div>
+                    
+                    <!-- Language & Utilities -->
+                    <div class="d-flex align-items-center gap-3">
+                        <!-- Custom Language Selector -->
+                        <div class="mr-3">
+                            <select id="langSelector" class="form-control ks-form-control" onchange="changeIndicLanguage(this.value)">
+                                <option value="en">English</option>
+                                <option value="hi">हिन्दी (Hindi)</option>
+                                <option value="mr">मराठी (Marathi)</option>
+                                <option value="te">తెలుగు (Telugu)</option>
+                                <option value="ta">தமிழ் (Tamil)</option>
+                                <option value="kn">ಕನ್ನಡ (Kannada)</option>
+                                <option value="gu">ગુજરાતી (Gujarati)</option>
+                            </select>
+                        </div>
+                        
+                        <div id="google_translate_element"></div>
+                    </div>
                 </header>
-                <section class="main-dashboard">
-                    <!-- Farmers Section -->
-                    <div id="farmers" class="page">
-                        <div class="farmers-search">
-                            <h1>Farmers Search</h1>
-                            <input type="text" placeholder="Farmer or City Name" id="searchInput" class="form-control" onkeyup="filterFarmers()" />
-                            <p>Separate multiple search terms with a comma, e.g.: John, New York</p>
-                            <button class="btn btn-primary">More filters</button>
-                            <button class="btn btn-secondary">Status</button>
-                            <div class="results mt-3">
-                                <p id="resultsCount">7 results</p>
-                                <div class="farmer-list" id="farmerList">
-                                    <!-- Farmers list -->
+
+                <!-- Alerts Banner Section (Weather & Advisory alerts) -->
+                <section class="mb-4">
+                    <h5 class="font-weight-bold mb-3"><i class="fas fa-bell text-warning"></i> Active Farm Advisories & Warnings</h5>
+                    <div id="alertsContainer">
+                        <!-- Dynamic alerts will load here -->
+                        <div class="ks-alert-banner success">
+                            <h6 class="font-weight-bold mb-1"><i class="fas fa-cloud-sun"></i> Optimal Spraying Advisory</h6>
+                            <p class="mb-0" style="font-size: 13px;">Weather conditions are calm and dry. Excellent time to apply planned organic fertilizers or pesticide remedies.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="row">
+                    <!-- Ground Telemetry Panel -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="ks-glass-card h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="ks-gradient-text m-0"><i class="fas fa-tint"></i> Live Ground Telemetry</h4>
+                                <button class="btn btn-sm btn-outline-success" onclick="simulateTelemetry()"><i class="fas fa-sync-alt"></i> Refresh Sensors</button>
+                            </div>
+                            <p class="text-muted" style="font-size: 13px;">Ground moisture levels and soil mineral status from simulated fields.</p>
+                            
+                            <div class="ks-sensor-grid">
+                                <div class="ks-sensor-card">
+                                    <div class="ks-sensor-icon"><i class="fas fa-water"></i></div>
+                                    <div class="ks-sensor-value" id="valMoisture">38%</div>
+                                    <div class="ks-sensor-label">Moisture</div>
+                                </div>
+                                <div class="ks-sensor-card">
+                                    <div class="ks-sensor-icon" style="color: #3498db;"><i class="fas fa-flask"></i></div>
+                                    <div class="ks-sensor-value" id="valPH">6.5</div>
+                                    <div class="ks-sensor-label">Soil pH</div>
+                                </div>
+                                <div class="ks-sensor-card">
+                                    <div class="ks-sensor-icon" style="color: #e74c3c;"><i class="fas fa-temperature-high"></i></div>
+                                    <div class="ks-sensor-value" id="valTemp">28.4°C</div>
+                                    <div class="ks-sensor-label">Temp</div>
+                                </div>
+                            </div>
+                            
+                            <div class="ks-sensor-grid mt-3">
+                                <div class="ks-sensor-card">
+                                    <div class="ks-sensor-value" style="color:#e67e22;" id="valN">78 ppm</div>
+                                    <div class="ks-sensor-label">Nitrogen (N)</div>
+                                </div>
+                                <div class="ks-sensor-card">
+                                    <div class="ks-sensor-value" style="color:#9b59b6;" id="valP">42 ppm</div>
+                                    <div class="ks-sensor-label">Phosphorous (P)</div>
+                                </div>
+                                <div class="ks-sensor-card">
+                                    <div class="ks-sensor-value" style="color:#1abc9c;" id="valK">50 ppm</div>
+                                    <div class="ks-sensor-label">Potassium (K)</div>
                                 </div>
                             </div>
                         </div>
-                        <div class="chart-container">
-                            <canvas id="farmersChart" class="chart"></canvas>
-                        </div>
                     </div>
 
-                    <!-- Weather Section -->
-                    <div id="weather" class="page" style="display: none;">
-                        <div class="weather-summary d-flex justify-content-between">
-                            <div class="temperature">
-                                <h1 id="currentTemp">57°F</h1>
-                                <p id="weatherConditions">Scattered Clouds • H:57°F L:39°F</p>
-                                <p id="sunsetTime">Sunset: 6:05PM</p>
+                    <!-- Localized Weather Forecast Widget -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="ks-glass-card h-100" style="background: linear-gradient(135deg, rgba(27, 77, 62, 0.05) 0%, rgba(46, 204, 113, 0.05) 100%);">
+                            <h4 class="ks-gradient-text mb-3"><i class="fas fa-cloud-sun-rain"></i> Local Weather Intelligence</h4>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h2 class="font-weight-bold mb-0" id="weatherTemp">--°C</h2>
+                                    <p class="text-muted mb-0" id="weatherDesc">Scattered Clouds</p>
+                                </div>
+                                <div style="font-size: 48px; color: #f39c12;">
+                                    <i class="fas fa-cloud-sun"></i>
+                                </div>
                             </div>
-                            <div class="details">
-                                <p id="feelsLike">Feels like 53°F</p>
-                                <p id="skyCover">Sky Cover: 43%</p>
-                                <p id="windSpeed">Wind: 7 mph</p>
-                                <p id="humidity">Humidity: 25%</p>
-                                <p id="precipitation">1-hr Precip: 0mm</p>
-                            </div>
-                        </div>
-                        <div class="hourly-forecast">
-                            <div class="forecast-header">
-                                <span>Hourly</span>
-                                <span>Daily</span>
-                                <span>Map</span>
-                            </div>
-                            <div class="forecast-graph">
-                                <canvas id="forecastChart" class="chart"></canvas>
-                            </div>
-                            <div class="forecast-details">
-                                <!-- Hourly forecast details -->
+                            
+                            <div class="border-top pt-3">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">Humidity</small>
+                                        <strong id="weatherHumidity">--%</strong>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">Wind</small>
+                                        <strong id="weatherWind">-- km/h</strong>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">Precipitation</small>
+                                        <strong id="weatherRain">0 mm</strong>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Crop Analysis Section -->
-                    <div id="crops" class="page" style="display: none;">
-                        <h1>Crop Analysis</h1>
-                        <p>Analyze the current state of crops, growth stages, and yield predictions.</p>
-                        <div class="chart-container">
-                            <canvas id="cropsChart" class="chart"></canvas>
+                <!-- Expert Connect Tickets Portal -->
+                <section class="mb-4">
+                    <div class="ks-glass-card">
+                        <h4 class="ks-gradient-text mb-3"><i class="fas fa-user-md"></i> Expert Support Connect (Rythu Seva Kendras)</h4>
+                        <p class="text-muted" style="font-size: 13px;">When AI diagnosis is uncertain, cases are automatically routed to human agricultural experts.</p>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" style="font-size: 14px;">
+                                <thead>
+                                    <tr>
+                                        <th>Ticket #</th>
+                                        <th>Target Disease</th>
+                                        <th>Assigned Center</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                        <th>Expert Action/Recommendation</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ticketsTableBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">No escalated support tickets found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="crop-details mt-4">
-                            <!-- Additional details about crops can go here -->
-                        </div>
-                    </div>
-
-                    <!-- Disease Analysis Section -->
-                    <div id="disease" class="page" style="display: none;">
-                        <h1>Disease Analysis</h1>
-                        <p>Monitor and predict crop diseases based on current conditions.</p>
-                        <div class="chart-container">
-                            <canvas id="diseaseChart" class="chart"></canvas>
-                        </div>
-                        <div class="disease-details mt-4">
-                            <!-- Disease details and recommendations go here -->
-                        </div>
-                    </div>
-
-                    <!-- Yearly Plan Section -->
-                    <div id="yearly" class="page" style="display: none;">
-                        <h1>Yearly Plan</h1>
-                        <p>Content for the yearly plan goes here.</p>
                     </div>
                 </section>
+
+                <div class="row">
+                    <!-- Recommendation History Log -->
+                    <div class="col-md-6 mb-4">
+                        <div class="ks-glass-card">
+                            <h4 class="ks-gradient-text mb-3"><i class="fas fa-history"></i> Crop Recommendations Log</h4>
+                            <div id="cropHistoryList" style="max-height: 250px; overflow-y: auto;">
+                                <div class="text-center py-4 text-muted" style="font-size: 13px;">No crop recommendations requested yet.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Disease History Log -->
+                    <div class="col-md-6 mb-4">
+                        <div class="ks-glass-card">
+                            <h4 class="ks-gradient-text mb-3"><i class="fas fa-file-medical-alt"></i> Plant Diagnoses History</h4>
+                            <div id="diseaseHistoryList" style="max-height: 250px; overflow-y: auto;">
+                                <div class="text-center py-4 text-muted" style="font-size: 13px;">No disease diagnoses logged yet.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </main>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // Function to show the specified page and hide others
-        function showPage(pageId) {
-            const pages = document.querySelectorAll('.page');
-            pages.forEach(page => {
-                if (page.id === pageId) {
-                    page.style.display = 'block';
-                } else {
-                    page.style.display = 'none';
-                }
-            });
+    <!-- Floating Voice Assistant (Component 4) -->
+    <div class="ks-voice-bot">
+        <button class="ks-voice-trigger" onclick="toggleVoiceBot()"><i class="fas fa-microphone"></i></button>
+        <div class="ks-voice-window" id="voiceBotWindow">
+            <div class="ks-voice-header">
+                <span class="font-weight-bold"><i class="fas fa-robot"></i> KrishiSaar AI Assistant</span>
+                <button class="btn btn-sm btn-link text-white p-0" onclick="toggleVoiceBot()"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="ks-voice-body" id="voiceChatBody">
+                <div class="ks-chat-bubble bot">
+                    Hello! I am your Indic Language agricultural assistant. How can I help you today? You can speak or type your question.
+                </div>
+            </div>
+            
+            <div class="ks-voice-footer">
+                <input type="text" id="voiceInputText" class="form-control" placeholder="Type question..." style="border-radius: 12px; font-size: 13px;" onkeydown="if(event.key === 'Enter') sendVoiceQuery()">
+                <button class="btn btn-success" style="border-radius: 50%; width: 36px; height: 36px; padding:0; display:flex; justify-content:center; align-items:center;" onclick="sendVoiceQuery()"><i class="fas fa-paper-plane" style="font-size: 12px;"></i></button>
+                <button class="btn btn-info" id="micQueryBtn" style="border-radius: 50%; width: 36px; height: 36px; padding:0; display:flex; justify-content:center; align-items:center;" onclick="startMicRecognition()"><i class="fas fa-microphone" style="font-size: 12px;"></i></button>
+            </div>
+        </div>
+    </div>
 
-            // Optionally, initialize content-specific functions
-            if (pageId === 'weather') {
-                initializeWeatherChart();
-            } else if (pageId === 'farmers') {
-                initializeFarmersChart();
-            } else if (pageId === 'crops') {
-                initializeCropsChart();
-            } else if (pageId === 'disease') {
-                initializeDiseaseChart();
-            }
+    <script type="text/javascript">
+        let currentLang = 'en';
+
+        function toggleVoiceBot() {
+            document.getElementById('voiceBotWindow').classList.toggle('show');
         }
 
-        // Function to fetch and update data in real time
-        function updateRealTimeData() {
-            // Example: Fetch weather data
-            fetch('https://api.openweathermap.org/data/2.5/weather?q=London&appid=YOUR_API_KEY')
-                .then(response => response.json())
+        // Initialize lists and fetch alerts on load
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchWeatherData();
+            simulateTelemetry();
+            fetchHistoryAndTickets();
+        });
+
+        function fetchWeatherData() {
+            // Call route to fetch weather based on Pune (Default)
+            fetch('/weather/advisory?location={{ user.district or "Pune" }}')
+                .then(res => res.json())
                 .then(data => {
-                    document.getElementById('currentTemp').innerText = `${Math.round(data.main.temp - 273.15)}°C`;
-                    document.getElementById('weatherConditions').innerText = data.weather[0].description;
-                    document.getElementById('sunsetTime').innerText = `Sunset: ${new Date(data.sys.sunset * 1000).toLocaleTimeString()}`;
-                    document.getElementById('feelsLike').innerText = `Feels like ${Math.round(data.main.feels_like - 273.15)}°C`;
-                    document.getElementById('skyCover').innerText = `Sky Cover: ${data.clouds.all}%`;
-                    document.getElementById('windSpeed').innerText = `Wind: ${data.wind.speed} mph`;
-                    document.getElementById('humidity').innerText = `Humidity: ${data.main.humidity}%`;
-                    document.getElementById('precipitation').innerText = `1-hr Precip: ${data.rain ? data.rain['1h'] : 0} mm`;
+                    if (data) {
+                        document.getElementById('weatherTemp').innerText = `${data.temperature.toFixed(1)}°C`;
+                        document.getElementById('weatherDesc').innerText = data.description || 'Clear Sky';
+                        document.getElementById('weatherHumidity').innerText = `${data.humidity}%`;
+                        document.getElementById('weatherWind').innerText = `${data.wind_speed} km/h`;
+                        document.getElementById('weatherRain').innerText = `${data.rain || 0} mm`;
+                    }
+                })
+                .catch(err => console.log('Weather fetch error:', err));
+        }
+
+        function simulateTelemetry() {
+            // Calls backend to simulate sensor telemetry
+            fetch('/sensor/simulate')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('valMoisture').innerText = `${data.soil_moisture.toFixed(0)}%`;
+                    document.getElementById('valPH').innerText = data.ph.toFixed(1);
+                    document.getElementById('valTemp').innerText = `${data.temperature.toFixed(1)}°C`;
+                    document.getElementById('valN').innerText = `${data.nitrogen.toFixed(0)} ppm`;
+                    document.getElementById('valP').innerText = `${data.phosphorous.toFixed(0)} ppm`;
+                    document.getElementById('valK').innerText = `${data.potassium.toFixed(0)} ppm`;
+
+                    // Refresh alerts block based on new values
+                    refreshAlerts(data);
                 });
         }
 
-        // Call updateRealTimeData every 10 minutes
-        setInterval(updateRealTimeData, 600000);
-
-        // Example function to initialize a chart for the farmers page
-        function initializeFarmersChart() {
-            const ctx = document.getElementById('farmersChart').getContext('2d');
-            const farmersChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Abrham', 'Dawit', 'Abera', 'Elias', 'Fitsum', 'Demelas', 'Abel'],
-                    datasets: [{
-                        label: 'Farmers Count',
-                        data: [10, 20, 15, 12, 25, 18, 22],
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    }]
+        function refreshAlerts(sensor) {
+            fetch('/weather-alerts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
-
-        // Example function to initialize a chart for the weather page
-        function initializeWeatherChart() {
-            const ctx = document.getElementById('forecastChart').getContext('2d');
-            const forecastChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['5PM', '6PM', '7PM', '8PM', '9PM', '10PM'],
-                    datasets: [{
-                        label: 'Temperature',
-                        data: [55, 47, 45, 43, 42, 40],
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
-
-        // Example function to initialize a chart for the crops page
-        function initializeCropsChart() {
-            const ctx = document.getElementById('cropsChart').getContext('2d');
-            const cropsChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Wheat', 'Corn', 'Soybean', 'Rice', 'Barley', 'Oats'],
-                    datasets: [{
-                        label: 'Crop Yield (tons)',
-                        data: [120, 150, 100, 130, 110, 90],
-                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
-                        borderColor: 'rgba(255, 206, 86, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
-
-        // Example function to initialize a chart for the disease page
-        function initializeDiseaseChart() {
-            const ctx = document.getElementById('diseaseChart').getContext('2d');
-            const diseaseChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                    datasets: [{
-                        label: 'Disease Risk',
-                        data: [2, 3, 5, 4, 6, 7, 8, 6, 5, 3, 4, 2],
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
-
-        // Function to filter farmers in real time
-        function filterFarmers() {
-            const input = document.getElementById('searchInput').value.toLowerCase();
-            const farmers = document.querySelectorAll('.farmer');
-            let count = 0;
-
-            farmers.forEach(farmer => {
-                const name = farmer.querySelector('.farmer-name').innerText.toLowerCase();
-                const location = farmer.querySelector('.farmer-location').innerText.toLowerCase();
-                if (name.includes(input) || location.includes(input)) {
-                    farmer.style.display = 'block';
-                    count++;
+                body: JSON.stringify(sensor)
+            })
+            .then(res => res.json())
+            .then(alerts => {
+                const container = document.getElementById('alertsContainer');
+                container.innerHTML = '';
+                if (alerts.length > 0) {
+                    alerts.forEach(alert => {
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'ks-alert-banner ' + (alert.type.includes('Warning') ? 'danger' : 'success');
+                        alertDiv.innerHTML = `
+                            <h6 class="font-weight-bold mb-1"><i class="fas fa-exclamation-triangle"></i> ${escapeHtml(alert.type)}</h6>
+                            <p class="mb-0" style="font-size: 13px;">${escapeHtml(alert.message)}</p>
+                        `;
+                        container.appendChild(alertDiv);
+                    });
                 } else {
-                    farmer.style.display = 'none';
+                    container.innerHTML = `
+                        <div class="ks-alert-banner success">
+                            <h6 class="font-weight-bold mb-1"><i class="fas fa-check-circle"></i> Conditions Stable</h6>
+                            <p class="mb-0" style="font-size: 13px;">No warnings or dry-spell threats active. Crops are growing optimally.</p>
+                        </div>
+                    `;
                 }
             });
-
-            document.getElementById('resultsCount').innerText = `${count} results`;
         }
 
-        // Call to update data on page load
-        updateRealTimeData();
-    </script>
-    <script>
-        i18next
-        .use(i18nextBrowserLanguageDetector)
-        .init({
-            lng: 'en', // default language
-            fallbackLng: 'en',
-            resources: {
-                en: {
-                    translation: {
-                        "FarmersSearch": "Farmers Search",
-                        "Placeholder": "Farmer or City Name",
-                        "MoreFilters": "More filters",
-                        "Status": "Status",
-                        "Weather": {
-                            "CurrentTemp": "57°F",
-                            "WeatherConditions": "Scattered Clouds • H:57°F L:39°F",
-                            "SunsetTime": "Sunset: 6:05PM",
-                            "FeelsLike": "Feels like 53°F",
-                            "SkyCover": "Sky Cover: 43%",
-                            "WindSpeed": "Wind: 7 mph",
-                            "Humidity": "Humidity: 25%",
-                            "Precipitation": "1-hr Precip: 0mm"
-                        }
+        function fetchHistoryAndTickets() {
+            fetch('/dashboard/history-data')
+                .then(res => res.json())
+                .then(data => {
+                    // Populate Crop History
+                    const cropList = document.getElementById('cropHistoryList');
+                    cropList.innerHTML = '';
+                    if (data.crop_recommendations.length > 0) {
+                        data.crop_recommendations.forEach(item => {
+                            const div = document.createElement('div');
+                            div.className = 'ks-list-item';
+                            div.innerHTML = `
+                                <div>
+                                    <h6 class="mb-1 text-success" style="font-weight:600;">${escapeHtml(item.crop.toUpperCase())}</h6>
+                                    <small class="text-muted">${escapeHtml(item.location)} • ${escapeHtml(item.season)}</small>
+                                </div>
+                                <span class="badge badge-success">${(item.confidence*100).toFixed(0)}%</span>
+                            `;
+                            cropList.appendChild(div);
+                        });
+                    } else {
+                        cropList.innerHTML = '<div class="text-center py-4 text-muted">No crop recommendations requested.</div>';
                     }
-                },
-                es: {
-                    translation: {
-                        "FarmersSearch": "Búsqueda de Agricultores",
-                        "Placeholder": "Nombre del Agricultor o Ciudad",
-                        "MoreFilters": "Más filtros",
-                        "Status": "Estado",
-                        "Weather": {
-                            "CurrentTemp": "57°F",
-                            "WeatherConditions": "Nubes dispersas • H:57°F L:39°F",
-                            "SunsetTime": "Atardecer: 6:05PM",
-                            "FeelsLike": "Se siente como 53°F",
-                            "SkyCover": "Cobertura del cielo: 43%",
-                            "WindSpeed": "Viento: 7 mph",
-                            "Humidity": "Humedad: 25%",
-                            "Precipitation": "Precipitación de 1 hora: 0 mm"
-                        }
+
+                    // Populate Disease Log History
+                    const diseaseList = document.getElementById('diseaseHistoryList');
+                    diseaseList.innerHTML = '';
+                    if (data.disease_logs.length > 0) {
+                        data.disease_logs.forEach(item => {
+                            const name = item.disease.includes('___') ? item.disease.split('___')[1].replace('_', ' ') : item.disease;
+                            const div = document.createElement('div');
+                            div.className = 'ks-list-item';
+                            div.innerHTML = `
+                                <div>
+                                    <h6 class="mb-1 text-danger" style="font-weight:600;">${escapeHtml(name)}</h6>
+                                    <small class="text-muted">Severity: ${escapeHtml(item.severity)} • Treatment: ${escapeHtml(item.fertilizer)}</small>
+                                </div>
+                                <small>${(item.confidence*100).toFixed(0)}%</small>
+                            `;
+                            diseaseList.appendChild(div);
+                        });
+                    } else {
+                        diseaseList.innerHTML = '<div class="text-center py-4 text-muted">No plant disease logs created.</div>';
                     }
-                },
-                hi: {
-                    translation: {
-                        "FarmersSearch": "किसान खोज",
-                        "Placeholder": "किसान या शहर का नाम",
-                        "MoreFilters": "अधिक फ़िल्टर",
-                        "Status": "स्थिति",
-                        "Weather": {
-                            "CurrentTemp": "57°F",
-                            "WeatherConditions": "फैल चुकी बर्फ • H:57°F L:39°F",
-                            "SunsetTime": "सूर्यास्त: 6:05PM",
-                            "FeelsLike": "महसूस होता है 53°F",
-                            "SkyCover": "आसमान की ढाल: 43%",
-                            "WindSpeed": "हवा: 7 mph",
-                            "Humidity": "आर्द्रता: 25%",
-                            "Precipitation": "1-घंटे की वर्षा: 0mm"
-                        }
+
+                    // Populate Support Tickets Table
+                    const ticketBody = document.getElementById('ticketsTableBody');
+                    ticketBody.innerHTML = '';
+                    if (data.support_tickets.length > 0) {
+                        data.support_tickets.forEach(ticket => {
+                            const diseaseName = ticket.disease.includes('___') ? ticket.disease.split('___')[1].replace('_', ' ') : ticket.disease;
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>#${ticket.id}</td>
+                                <td>${escapeHtml(diseaseName)}</td>
+                                <td>${escapeHtml(ticket.assigned_center)}</td>
+                                <td><span class="badge badge-${ticket.priority === 'High' ? 'danger' : 'warning'}">${escapeHtml(ticket.priority)}</span></td>
+                                <td><span class="badge badge-${ticket.status === 'Open' ? 'success' : 'secondary'}">${escapeHtml(ticket.status)}</span></td>
+                                <td><strong>${escapeHtml(ticket.expert_recommendation || 'Awaiting Expert Review')}</strong></td>
+                            `;
+                            ticketBody.appendChild(tr);
+                        });
+                    } else {
+                        ticketBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No escalated support tickets found.</td></tr>';
                     }
+                });
+        }
+
+        // Sanitize user-generated text before injecting into innerHTML (prevents XSS)
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Voice Assistant logic
+        function sendVoiceQuery() {
+            const input = document.getElementById('voiceInputText');
+            const query = input.value.trim();
+            if (!query) return;
+
+            appendChatBubble(query, 'user');
+            input.value = '';
+
+            fetch('/voice/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
                 },
-                mr: {
-                    translation: {
-                        "FarmersSearch": "शेतकरी शोध",
-                        "Placeholder": "शेतकरी किंवा शहराचे नाव",
-                        "MoreFilters": "अधिक फिल्टर",
-                        "Status": "स्थिती",
-                        "Weather": {
-                            "CurrentTemp": "57°F",
-                            "WeatherConditions": "विखरलेले ढग • H:57°F L:39°F",
-                            "SunsetTime": "सूर्यास्त: 6:05PM",
-                            "FeelsLike": "असे वाटते 53°F",
-                            "SkyCover": "आसमान कव्हर: 43%",
-                            "WindSpeed": "वारा: 7 mph",
-                            "Humidity": "आर्द्रता: 25%",
-                            "Precipitation": "1-तासाचा पाऊस: 0mm"
-                        }
-                    }
-                },
-                kn: {
-                    translation: {
-                        "FarmersSearch": "ಕೃಷಿಕರ ಶೋಧ",
-                        "Placeholder": "ಕೃಷಿಕ ಅಥವಾ ನಗರದ ಹೆಸರು",
-                        "MoreFilters": "ಹೆಚ್ಚು ಫಿಲ್ಟರ್‌ಗಳು",
-                        "Status": "ಸ್ಥಿತಿ",
-                        "Weather": {
-                            "CurrentTemp": "57°F",
-                            "WeatherConditions": "ವ್ಯಾಪಕ ಬಗ್ಗಲಿಗಳು • H:57°F L:39°F",
-                            "SunsetTime": "ಸೂರ್ಯাস্ত: 6:05PM",
-                            "FeelsLike": "ಹೀಗೇ ಅನುಭವಿಸುತ್ತಿದೆ 53°F",
-                            "SkyCover": "ಆಕಾಶದ ಕವರ್: 43%",
-                            "WindSpeed": "ಹಾವು: 7 mph",
-                            "Humidity": "ಆಧಾರವಿಲ್ಲ: 25%",
-                            "Precipitation": "1-ಮಿಣಿಟು: 0mm"
-                        }
-                    }
-                },
-                or: {
-                    translation: {
-                        "FarmersSearch": "କୃଷକ ଖୋଜ",
-                        "Placeholder": "କୃଷକ କିମ୍ବା ସହରର ନାମ",
-                        "MoreFilters": "ଅଧିକ ଫିଲ୍ଟର",
-                        "Status": "ସ୍ଥିତି",
-                        "Weather": {
-                            "CurrentTemp": "57°F",
-                            "WeatherConditions": "ବିକିରଣ କ୍ଲାଉଡ୍ • H:57°F L:39°F",
-                            "SunsetTime": "ସୂର୍ଯ୍ୟାସ୍ତ: 6:05PM",
-                            "FeelsLike": "ଅନୁଭବ ହୁଏ 53°F",
-                            "SkyCover": "ଆକାଶ କଭର୍: 43%",
-                            "WindSpeed": "ବାତାସ: 7 mph",
-                            "Humidity": "ଆଦ୍ରତା: 25%",
-                            "Precipitation": "1-ଘଣ୍ଟାର ବର୍ଷା: 0mm"
-                        }
-                    }
-                },
-            }
-        });
-        </script>
-    <script>
-        function changeLanguage(event) {
-            const language = event.target.value;
-            i18next.changeLanguage(language, () => {
-                updateContent();
+                body: JSON.stringify({ query: query, language: currentLang })
+            })
+            .then(res => res.json())
+            .then(data => {
+                appendChatBubble(data.reply, 'bot');
+                speakResponse(data.reply);
             });
         }
-    
-        function updateContent() {
-            document.getElementById('searchInput').placeholder = i18next.t('Placeholder');
-            document.querySelector('.farmers-search h1').innerText = i18next.t('FarmersSearch');
-            document.querySelector('.btn-primary').innerText = i18next.t('MoreFilters');
-            document.querySelector('.btn-secondary').innerText = i18next.t('Status');
-        
-            const weatherData = i18next.t('Weather', { returnObjects: true });
-            document.getElementById('currentTemp').innerText = weatherData.CurrentTemp;
-            document.getElementById('weatherConditions').innerText = weatherData.WeatherConditions;
-            document.getElementById('sunsetTime').innerText = weatherData.SunsetTime;
-            document.getElementById('feelsLike').innerText = weatherData.FeelsLike;
-            document.getElementById('skyCover').innerText = weatherData.SkyCover;
-            document.getElementById('windSpeed').innerText = weatherData.WindSpeed;
-            document.getElementById('humidity').innerText = weatherData.Humidity;
-            document.getElementById('precipitation').innerText = weatherData.Precipitation;
+
+        function appendChatBubble(text, sender) {
+            const body = document.getElementById('voiceChatBody');
+            const bubble = document.createElement('div');
+            bubble.className = 'ks-chat-bubble ' + (sender === 'user' ? 'user' : 'bot');
+            bubble.innerText = text;
+            body.appendChild(bubble);
+            body.scrollTop = body.scrollHeight;
         }
-        
-        
-        // Initialize content on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            updateContent();
-        });
+
+        function speakResponse(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // Map language codes to Web Speech synthesis voices
+                const voiceMap = {
+                    'hi': 'hi-IN',
+                    'mr': 'mr-IN',
+                    'te': 'te-IN',
+                    'ta': 'ta-IN',
+                    'kn': 'kn-IN',
+                    'gu': 'gu-IN',
+                    'en': 'en-US'
+                };
+                utterance.lang = voiceMap[currentLang] || 'en-US';
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function startMicRecognition() {
+            const btn = document.getElementById('micQueryBtn');
+            const voiceMap = {
+                'hi': 'hi-IN', 'mr': 'mr-IN', 'te': 'te-IN',
+                'ta': 'ta-IN', 'kn': 'kn-IN', 'gu': 'gu-IN', 'en': 'en-US'
+            };
+
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin text-danger"></i>';
+            btn.disabled = true;
+
+            // Try ElevenLabs STT via MediaRecorder (higher accuracy, supports Indic languages)
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        const mediaRecorder = new MediaRecorder(stream);
+                        const chunks = [];
+                        mediaRecorder.ondataavailable = e => chunks.push(e.data);
+                        mediaRecorder.onstop = () => {
+                            const blob = new Blob(chunks, { type: 'audio/webm' });
+                            stream.getTracks().forEach(t => t.stop());
+                            transcribeWithElevenLabs(blob);
+                        };
+                        mediaRecorder.start();
+                        // Auto-stop after 6 seconds of recording
+                        setTimeout(() => {
+                            if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+                        }, 6000);
+                    })
+                    .catch(() => fallbackWebSpeech(btn, voiceMap));
+            } else {
+                fallbackWebSpeech(btn, voiceMap);
+            }
+        }
+
+        // Send audio blob to backend ElevenLabs STT endpoint
+        function transcribeWithElevenLabs(blob) {
+            const btn = document.getElementById('micQueryBtn');
+            const formData = new FormData();
+            formData.append('audio', blob, 'voice.webm');
+            formData.append('language', currentLang);
+
+            fetch('/voice/transcribe', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    btn.innerHTML = '<i class="fas fa-microphone"></i>';
+                    btn.disabled = false;
+                    if (data.success && data.text) {
+                        document.getElementById('voiceInputText').value = data.text;
+                        sendVoiceQuery();
+                    } else if (data.use_fallback) {
+                        // Backend says service unavailable — use browser STT
+                        const voiceMap = {
+                            'hi': 'hi-IN', 'mr': 'mr-IN', 'te': 'te-IN',
+                            'ta': 'ta-IN', 'kn': 'kn-IN', 'gu': 'gu-IN', 'en': 'en-US'
+                        };
+                        fallbackWebSpeech(btn, voiceMap);
+                    } else {
+                        appendChatBubble("Sorry, I couldn't understand the audio. Please try typing.", 'bot');
+                    }
+                })
+                .catch(() => {
+                    btn.innerHTML = '<i class="fas fa-microphone"></i>';
+                    btn.disabled = false;
+                    appendChatBubble("Voice service error. Please type your question.", 'bot');
+                });
+        }
+
+        // Browser-native Web Speech API fallback
+        function fallbackWebSpeech(btn, voiceMap) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                btn.innerHTML = '<i class="fas fa-microphone"></i>';
+                btn.disabled = false;
+                alert("Speech recognition is not supported in this browser. Please type your question.");
+                return;
+            }
+            const recognition = new SpeechRecognition();
+            recognition.lang = voiceMap[currentLang] || 'en-US';
+            recognition.start();
+            recognition.onresult = function(event) {
+                const speechResult = event.results[0][0].transcript;
+                document.getElementById('voiceInputText').value = speechResult;
+                btn.innerHTML = '<i class="fas fa-microphone"></i>';
+                btn.disabled = false;
+                sendVoiceQuery();
+            };
+            recognition.onspeechend = function() { recognition.stop(); };
+            recognition.onerror = function() {
+                btn.innerHTML = '<i class="fas fa-microphone"></i>';
+                btn.disabled = false;
+            };
+            recognition.onend = function() {
+                btn.innerHTML = '<i class="fas fa-microphone"></i>';
+                btn.disabled = false;
+            };
+        }
+
+        function changeIndicLanguage(val) {
+            currentLang = val;
+            speakResponse("Language changed");
+        }
     </script>
-    <script src="https://cdn.botpress.cloud/webchat/v2.1/inject.js"></script>
-<script src="https://mediafiles.botpress.cloud/b87543e6-fc32-417f-b0be-739c0167b0df/webchat/v2.1/config.js"></script>
-<script type="text/javascript">
-    function googleTranslateElementInit() {
-        new google.translate.TranslateElement({
-            pageLanguage: 'en',
-            includedLanguages: 'en,hi,mr,ta,te,kn,or,bn,gu,ml,pa,as,ur,sr,si,sd,ne,ks,ma,kd,bh,ho,kp,ra,co,ch,go,na,li,ga,md,mi,no,ve,so,ti,be,wa,di,me,bu,ri,mp,ci,ke,ji,bl,mo,ru',
-            layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-        }, 'google_translate_element');
-    }
-</script>
-<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script> 
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,hi,mr,ta,te,kn,or,bn,gu,ml,pa,as,ur,sr,si,sd,ne,ks,ma,kd,bh,ho,kp,ra,co,ch,go,na,li,ga,md,mi,no,ve,so,ti,be,wa,di,me,bu,ri,mp,ci,ke,ji,bl,mo,ru',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+            }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>

@@ -1,25 +1,62 @@
 {% extends 'layout.html' %} 
 {% block body %}
 
-<style>
-  body {
-    background-color: rgb(206, 206, 228);
-  }
-</style>
+<!-- Link to custom KrishiSaar styles -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/krishisaar.css') }}" />
 
-<h2 style="text-align: center; color: black;">
-  <b>Find out which disease has affected your plant</b>
-</h2>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="ks-glass-card">
+                <div class="text-center mb-4">
+                    <h2 class="ks-gradient-text" style="font-weight: 800;"><i class="fas fa-virus"></i> Crop Health Intelligence</h2>
+                    <p class="text-muted">Upload a photo of the affected crop leaves and describe the symptoms via voice or text for an instant AI diagnosis.</p>
+                </div>
+                
+                <form class="form-signin" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group mb-4">
+                        <label for="inputfile" class="font-weight-bold"><i class="fas fa-image text-success"></i> Select Leaf Image</label>
+                        <input type="file" required name="file" class="form-control ks-form-control-file" id="inputfile" onchange="preview_image(event)" style="display: block; width: 100%;">
+                        <br>
+                        <div style="border: 2px dashed rgba(46, 204, 113, 0.3); border-radius: 16px; padding: 10px; display: flex; justify-content: center; align-items: center; background: #fafafa; min-height: 200px;">
+                            <img id="output-image" style="max-width: 100%; max-height: 250px; display: none; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);" />
+                            <div id="image-placeholder" class="text-center text-muted">
+                                <i class="fas fa-cloud-upload-alt fa-3x mb-2 text-success" style="opacity: 0.7;"></i>
+                                <p style="font-size: 13px;">Selected image preview will appear here</p>
+                            </div>
+                        </div>
+                    </div>
 
-<div style="width: 350px; margin: 2rem auto; color: black; border-radius: 25px; padding: 10px; font-weight: bold; background-color: #fff;">
-  <form class="form-signin" method="post" enctype="multipart/form-data">
-    <h4 class="mb-3 font-weight-normal "><b>Please Upload The Image</b></h4>
-    <input type="file" required name="file" class="form-control-file" id="inputfile" onchange="preview_image(event)" style="font-weight: bold;">
-    <br><br>
-    <img id="output-image" class="rounded mx-auto d-block" style="max-width: 100%; max-height: 300px;" />
-    <br><br>
-    <button class="btn btn-lg btn-primary btn-block" type="submit" style="font-weight: bold;">Predict</button>
-  </form>
+                    <!-- Voice / Text Symptom Description -->
+                    <div class="form-group mb-4">
+                        <label for="voice_desc" class="font-weight-bold"><i class="fas fa-microphone text-success"></i> Describe Symptoms (Voice or Text)</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control ks-form-control" id="voice_desc" name="voice_desc" placeholder="e.g. Yellow spots on margins of leaves...">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-success" type="button" onclick="startSpeech()" style="border-radius: 0 12px 12px 0;" id="micBtn"><i class="fas fa-microphone"></i></button>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">Click the microphone to speak symptoms in your preferred language.</small>
+                    </div>
+
+                    <!-- Tick to request expert review -->
+                    <div class="form-check mb-4">
+                        <input type="checkbox" class="form-check-input" id="expert_escalate" name="expert_escalate" value="true">
+                        <label class="form-check-label font-weight-bold" for="expert_escalate" style="font-size: 14px; color: var(--primary-green);">
+                            <i class="fas fa-user-md text-success"></i> Request Rythu Seva Kendra expert review
+                        </label>
+                    </div>
+
+                    <button class="btn btn-lg btn-success btn-block ks-btn ks-btn-primary" type="submit">Diagnose Plant Health</button>
+                </form>
+            </div>
+            
+            <div class="text-center mt-3">
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-link text-success"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script type="text/javascript">
@@ -27,9 +64,45 @@
     var reader = new FileReader();
     reader.onload = function () {
       var output = document.getElementById('output-image');
+      var placeholder = document.getElementById('image-placeholder');
       output.src = reader.result;
+      output.style.display = 'block';
+      placeholder.style.display = 'none';
     }
     reader.readAsDataURL(event.target.files[0]);
+  }
+
+  function startSpeech() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+          alert("Your browser does not support Speech Recognition. Please type manually.");
+          return;
+      }
+      const recognition = new SpeechRecognition();
+      recognition.lang = document.documentElement.lang || 'en-IN';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      
+      const micBtn = document.getElementById('micBtn');
+      micBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin text-danger"></i>';
+      
+      recognition.start();
+      
+      recognition.onresult = function(event) {
+          const speechResult = event.results[0][0].transcript;
+          document.getElementById('voice_desc').value = speechResult;
+          micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+      };
+      
+      recognition.onspeechend = function() {
+          recognition.stop();
+          micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+      };
+      
+      recognition.onerror = function(event) {
+          micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+          alert('Speech recognition error occurred: ' + event.error);
+      };
   }
 </script>
 

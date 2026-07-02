@@ -1,40 +1,249 @@
 {% extends 'layout.html' %}
 {% block body %}
 
-<style>
-    html body {
-        background-color: rgb(206, 206, 228);
-    }
-</style>
+<!-- Link to custom KrishiSaar styles -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/krishisaar.css') }}" />
 
-<br /><br />
-<h2 style="text-align: center; margin: 0px; color: black">
-    <b>Upload Soil Image to Predict the Best Crop</b>
-</h2>
-<br />
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="text-center mb-5">
+                <h1 class="ks-gradient-text" style="font-size: 38px; font-weight: 800;"><i class="fas fa-seedling"></i> Crop Recommendation Center</h1>
+                <p class="text-muted">Choose your recommendation method: upload a soil photo or use our smart environmental parameter analysis.</p>
+            </div>
+            
+            <div class="row">
+                <!-- Left Option: Soil Image classifier (Existing) -->
+                <div class="col-md-5 mb-4">
+                    <div class="ks-glass-card h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="text-center mb-4">
+                                <div style="background: rgba(46, 204, 113, 0.1); width: 64px; height: 64px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 16px;">
+                                    <i class="fas fa-camera text-success" style="font-size: 28px;"></i>
+                                </div>
+                                <h3 style="font-weight: 700; color: var(--primary-green);">Soil Image Upload</h3>
+                                <p class="text-muted" style="font-size: 14px;">Upload a photo of your soil. The neural network will identify the soil type and recommend matching crops.</p>
+                            </div>
+                            
+                            <form method="POST" action="{{ url_for('crop.soil_prediction') }}" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="form-group mb-3">
+                                    <label for="soil_image" class="font-weight-bold" style="font-size: 14px;">Upload Soil Image</label>
+                                    <input type="file" class="form-control ks-form-control" id="soil_image" name="soil_image" required />
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="soil_model_type" class="font-weight-bold" style="font-size: 13px;">Soil Classification Model</label>
+                                    <select class="form-control ks-form-control" id="soil_model_type" name="soil_model_type">
+                                        <option value="soilnet">SoilNet (SoilNet_93_86.h5)</option>
+                                        <option value="densenet">DenseNet121 (DenseNet121v2_95.h5)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-success btn-block ks-btn ks-btn-primary mt-4">Predict Soil Type</button>
+                            </form>
+                        </div>
+                        <div class="text-center mt-3">
+                            <span class="badge badge-info px-3 py-1">Inbuilt Keras Model</span>
+                        </div>
+                    </div>
+                </div>
 
-<div
-  style="
-    width: 350px;
-    height: 20rem;
-    margin: 0px auto;
-    color: black;
-    border-radius: 25px;
-    padding: 10px 10px;
-  "
->
-<form method="POST" action="{{ url_for('soil_prediction') }}" enctype="multipart/form-data">
-  <div class="form-group">
-      <label for="soil_image" style="font-size: 17px"><b>Upload Soil Image</b></label>
-      <input type="file" class="form-control" id="soil_image" name="soil_image" required />
-  </div>
-  <div class="d-flex justify-content-center">
-      <button type="submit" class="btn btn-info" style="color: black; font-weight: bold; width: 130px; height:50px; border-radius:12px; font-size: 21px;">
-          Predict
-      </button>
-  </div>
-</form>
+                <!-- Right Option: Smart Crop Recommendation (New AI) -->
+                <div class="col-md-7 mb-4">
+                    <div class="ks-glass-card h-100">
+                        <div class="text-center mb-4">
+                            <div style="background: rgba(243, 156, 18, 0.1); width: 64px; height: 64px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 16px;">
+                                <i class="fas fa-brain text-warning" style="font-size: 28px;"></i>
+                            </div>
+                            <h3 style="font-weight: 700; color: var(--primary-green);">Smart Crop Advisor</h3>
+                            <p class="text-muted" style="font-size: 14px;">Enter soil parameters and location. The system pulls live weather data and runs the RandomForest predictive model.</p>
+                        </div>
 
+                        <form method="POST" action="{{ url_for('crop.crop_recommend_ai') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="form-group mb-3">
+                                        <label for="location" class="font-weight-bold" style="font-size: 13px;">Location (City Name)</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control ks-form-control" id="location" name="location" placeholder="e.g. Pune" required>
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="detectLocation()" style="border-radius: 0 12px 12px 0;"><i class="fas fa-map-marker-alt"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group mb-3">
+                                        <label for="season" class="font-weight-bold" style="font-size: 13px;">Current Season</label>
+                                        <select class="form-control ks-form-control" id="season" name="season">
+                                            <option value="kharif">Kharif (Monsoon)</option>
+                                            <option value="rabi">Rabi (Winter)</option>
+                                            <option value="zaid">Zaid (Summer)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-sm-4">
+                                    <div class="form-group mb-3">
+                                        <label for="nitrogen" class="font-weight-bold" style="font-size: 13px;">Nitrogen (N)</label>
+                                        <input type="number" class="form-control ks-form-control" id="nitrogen" name="nitrogen" placeholder="0-140 ppm" required>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-group mb-3">
+                                        <label for="phosphorous" class="font-weight-bold" style="font-size: 13px;">Phosphorous (P)</label>
+                                        <input type="number" class="form-control ks-form-control" id="phosphorous" name="phosphorous" placeholder="0-145 ppm" required>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-group mb-3">
+                                        <label for="potassium" class="font-weight-bold" style="font-size: 13px;">Potassium (K)</label>
+                                        <input type="number" class="form-control ks-form-control" id="potassium" name="potassium" placeholder="0-205 ppm" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="form-group mb-3">
+                                        <label for="ph" class="font-weight-bold" style="font-size: 13px;">Soil pH level</label>
+                                        <input type="number" step="0.1" class="form-control ks-form-control" id="ph" name="ph" placeholder="3.5 - 9.0" required>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group mb-3">
+                                        <label for="soil_type" class="font-weight-bold" style="font-size: 13px;">Soil Type (Manual)</label>
+                                        <select class="form-control ks-form-control" id="soil_type" name="soil_type">
+                                            <option value="Alluvial">Alluvial Soil</option>
+                                            <option value="Black">Black Soil</option>
+                                            <option value="Clay">Clay Soil</option>
+                                            <option value="Red">Red Soil</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group mb-3">
+                                        <label for="model_type" class="font-weight-bold" style="font-size: 13px;">Prediction ML Model</label>
+                                        <select class="form-control ks-form-control" id="model_type" name="model_type">
+                                            <option value="random_forest">Random Forest Classifier (Recommended)</option>
+                                            <option value="logistic_regression">Logistic Regression (Fast)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-warning btn-block ks-btn ks-btn-primary text-white mt-3">Analyze & Recommend Crop</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    const DISTRICT_COORDS = {
+        'pune': [18.52, 73.85],
+        'mumbai': [19.08, 72.88],
+        'nashik': [19.99, 73.79],
+        'nagpur': [21.15, 79.08],
+        'ahmednagar': [19.08, 74.74],
+        'aurangabad': [19.88, 75.32],
+        'hyderabad': [17.39, 78.49],
+        'jaipur': [26.91, 75.79],
+        'delhi': [28.61, 77.21],
+        'bangalore': [12.97, 77.59],
+        'chennai': [13.08, 80.27],
+        'kolkata': [22.57, 88.36],
+        'lucknow': [26.85, 80.91],
+        'bhopal': [23.26, 77.41],
+        'indore': [22.72, 75.86],
+        'patna': [25.60, 85.14],
+    };
+
+    const NPK_DATA = {
+        'indore': { n: 80, p: 45, k: 52, ph: 6.6 },
+        'pune': { n: 70, p: 50, k: 45, ph: 6.8 },
+        'mumbai': { n: 60, p: 40, k: 35, ph: 6.2 },
+        'nashik': { n: 75, p: 48, k: 52, ph: 6.7 },
+        'nagpur': { n: 85, p: 42, k: 48, ph: 7.0 },
+        'ahmednagar': { n: 78, p: 46, k: 50, ph: 6.9 },
+        'aurangabad': { n: 72, p: 50, k: 44, ph: 7.1 },
+        'hyderabad': { n: 90, p: 55, k: 60, ph: 6.5 },
+        'jaipur': { n: 50, p: 30, k: 40, ph: 7.5 },
+        'delhi': { n: 65, p: 45, k: 55, ph: 7.2 },
+        'bangalore': { n: 85, p: 50, k: 58, ph: 6.4 },
+        'chennai': { n: 70, p: 42, k: 40, ph: 6.3 },
+        'kolkata': { n: 95, p: 60, k: 65, ph: 6.0 },
+        'lucknow': { n: 88, p: 48, k: 50, ph: 7.0 },
+        'bhopal': { n: 80, p: 45, k: 52, ph: 6.6 },
+        'patna': { n: 92, p: 52, k: 54, ph: 6.8 },
+    };
+
+    function autoFillNPK(locationVal) {
+        if (!locationVal) return;
+        let targetDistrict = 'default';
+        
+        // Check if input is lat, lon coordinates
+        const coordMatch = locationVal.match(/^([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)$/);
+        if (coordMatch) {
+            const lat = parseFloat(coordMatch[1]);
+            const lon = parseFloat(coordMatch[2]);
+            let minDistance = Infinity;
+            for (const [distName, coords] of Object.entries(DISTRICT_COORDS)) {
+                const distance = Math.hypot(lat - coords[0], lon - coords[1]);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    targetDistrict = distName;
+                }
+            }
+        } else {
+            const cleanVal = locationVal.toLowerCase().trim();
+            for (const distName of Object.keys(NPK_DATA)) {
+                if (cleanVal.includes(distName)) {
+                    targetDistrict = distName;
+                    break;
+                }
+            }
+        }
+        
+        const npk = NPK_DATA[targetDistrict] || { n: 80, p: 45, k: 50, ph: 6.5 };
+        
+        document.getElementById('nitrogen').value = npk.n;
+        document.getElementById('phosphorous').value = npk.p;
+        document.getElementById('potassium').value = npk.k;
+        document.getElementById('ph').value = npk.ph;
+    }
+
+    function detectLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const locationStr = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                document.getElementById('location').value = locationStr;
+                autoFillNPK(locationStr);
+            }, error => {
+                alert("Geolocation failed or was denied. Please type city name manually.");
+            });
+        } else {
+            alert("Geolocation is not supported by this browser.");
+        }
+    }
+
+    // Attach event listeners for typing
+    document.addEventListener('DOMContentLoaded', () => {
+        const locationInput = document.getElementById('location');
+        if (locationInput) {
+            locationInput.addEventListener('input', (e) => {
+                autoFillNPK(e.target.value);
+            });
+            // Try to autofill on load in case the field was pre-filled
+            autoFillNPK(locationInput.value);
+        }
+    });
+</script>
 
 {% endblock %}

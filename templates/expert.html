@@ -1,0 +1,214 @@
+{% extends 'layout.html' %}
+{% block body %}
+
+<!-- Link to custom KrishiSaar styles -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/krishisaar.css') }}" />
+
+<!-- CSRF token for fetch() calls -->
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h1 class="ks-gradient-text"><i class="fas fa-user-shield"></i> Rythu Seva Kendra (RSK) Expert Portal</h1>
+            <p class="text-muted">Review escalated crop disease tickets and submit official agricultural recommendations.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Tickets List -->
+        <div class="col-md-5">
+            <div class="ks-glass-card">
+                <h3 class="ks-gradient-text mb-3"><i class="fas fa-list-ul"></i> Escalated Tickets</h3>
+                <div class="list-group" id="ticketListGroup" style="max-height: 500px; overflow-y: auto;">
+                    {% if tickets %}
+                        {% for ticket in tickets %}
+                            <a href="#" onclick="selectTicket('{{ ticket.id }}')" class="list-group-item list-group-item-action flex-column align-items-start ks-list-item {% if ticket.status == 'Resolved' %}bg-light text-muted{% endif %}" id="ticket-item-{{ ticket.id }}">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1 text-success" style="font-weight: 600;">Ticket #{{ ticket.id }}</h5>
+                                    <small>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') if ticket.created_at else 'Date N/A' }}</small>
+                                </div>
+                                <p class="mb-1"><strong>Suspected:</strong> {{ ticket.disease.split('___')[-1].replace('_', ' ') }}</p>
+                                <div class="d-flex justify-content-between align-items-center mt-2 w-100">
+                                    <span class="badge badge-{% if ticket.priority == "High" %}danger{% else %}warning{% endif %}">{{ ticket.priority }} Priority</span>
+                                    <span class="badge badge-{% if ticket.status == "Open" %}success{% else %}secondary{% endif %}" id="status-badge-{{ ticket.id }}">{{ ticket.status }}</span>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
+                            <p>No escalated tickets found. All systems nominal!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Ticket Detail Pane -->
+        <div class="col-md-7">
+            <div class="ks-glass-card" id="detailPane" style="display: none; min-height: 580px;">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+                    <h3 class="ks-gradient-text" id="detailTitle">Ticket Detail</h3>
+                    <span id="detailStatus" class="badge">Open</span>
+                </div>
+                
+                <div class="row">
+                    <!-- Crop Photo -->
+                    <div class="col-md-6 mb-3">
+                        <label class="font-weight-bold">Crop Diagnosis Leaf Image</label>
+                        <div style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; background: #000; height: 220px; display: flex; align-items: center; justify-content: center;">
+                            <img id="detailImage" src="" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="Crop image">
+                        </div>
+                    </div>
+                    <!-- Ticket Details -->
+                    <div class="col-md-6 mb-3">
+                        <label class="font-weight-bold">Metadata Details</label>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><strong>Farmer:</strong> <span id="detailFarmer">N/A</span></li>
+                            <li class="mb-2"><strong>Phone:</strong> <span id="detailPhone">N/A</span></li>
+                            <li class="mb-2"><strong>District:</strong> <span id="detailDistrict">N/A</span></li>
+                            <li class="mb-2"><strong>AI Diagnosis:</strong> <span id="detailDiagnosis" class="text-danger">N/A</span></li>
+                            <li class="mb-2"><strong>Severity:</strong> <span id="detailSeverity">N/A</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="font-weight-bold">Farmer's Voice / Query Description</label>
+                    <div class="p-3 bg-light rounded" id="detailDescription" style="font-style: italic; border-left: 4px solid var(--emerald-green);">
+                        "No voice description provided."
+                    </div>
+                </div>
+
+                <!-- Input Resolution Form -->
+                <div class="border-top pt-4">
+                    <h4 class="text-success mb-3"><i class="fas fa-file-signature"></i> RSK Expert Recommendation</h4>
+                    <form id="expertForm" onsubmit="submitRecommendation(event)">
+                        <input type="hidden" id="submitTicketId">
+                        <div class="form-group">
+                            <label for="expertText">Official Instructions (Organic alternatives, chemical treatments, irrigation adjustments):</label>
+                            <textarea id="expertText" class="form-control ks-form-control" rows="4" placeholder="Enter expert diagnosis and advice..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-block ks-btn ks-btn-primary" id="submitBtn">Submit Advice & Resolve Ticket</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Empty Detail State -->
+            <div class="ks-glass-card text-center py-5 d-flex flex-column align-items-center justify-content-center" id="emptyPane" style="min-height: 580px; color: var(--text-secondary);">
+                <i class="fas fa-clipboard-check fa-4x mb-3 text-success"></i>
+                <h4>Select a ticket from the left panel to review escalated diagnosis logs.</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // In-memory tickets database rendered from backend (safely escaped)
+    const ticketsDb = {
+        {% for ticket in tickets %}
+        "{{ ticket.id }}": {
+            id: {{ ticket.id | tojson }},
+            disease: {{ ticket.disease.split('___')[-1].replace('_', ' ') | tojson }},
+            image: "data:image/png;base64,{{ ticket.image_base64 }}",
+            severity: {{ ticket.severity | tojson }},
+            status: {{ ticket.status | tojson }},
+            priority: {{ ticket.priority | tojson }},
+            farmer: {{ ticket.user.name | tojson }},
+            phone: {{ (ticket.user.phone or 'N/A') | tojson }},
+            district: {{ (ticket.user.district or 'N/A') | tojson }},
+            expert_recommendation: {{ (ticket.expert_recommendation or '') | tojson }},
+            voice: {{ (ticket.disease ~ ' - ' ~ ticket.severity ~ ' severity.') | tojson }}
+        },
+        {% endfor %}
+    };
+
+    function selectTicket(id) {
+        const ticket = ticketsDb[id];
+        if (!ticket) return;
+        
+        // Hide empty pane, show details
+        document.getElementById('emptyPane').style.display = 'none';
+        document.getElementById('detailPane').style.display = 'block';
+        
+        // Set values
+        document.getElementById('detailTitle').innerText = "Reviewing Ticket #" + ticket.id;
+        document.getElementById('detailStatus').innerText = ticket.status;
+        
+        // Style status badge
+        const badge = document.getElementById('detailStatus');
+        badge.className = 'badge ' + (ticket.status === 'Open' ? 'badge-success' : 'badge-secondary');
+        
+        document.getElementById('detailImage').src = ticket.image;
+        document.getElementById('detailFarmer').innerText = ticket.farmer;
+        document.getElementById('detailPhone').innerText = ticket.phone;
+        document.getElementById('detailDistrict').innerText = ticket.district;
+        document.getElementById('detailDiagnosis').innerText = ticket.disease;
+        document.getElementById('detailSeverity').innerText = ticket.severity;
+        document.getElementById('detailDescription').innerText = ticket.voice || 'No specific description provided.';
+        document.getElementById('submitTicketId').value = ticket.id;
+        document.getElementById('expertText').value = ticket.expert_recommendation;
+        
+        // Disable form if already resolved
+        if (ticket.status === 'Resolved') {
+            document.getElementById('expertText').readOnly = true;
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerText = 'Resolved by Expert';
+        } else {
+            document.getElementById('expertText').readOnly = false;
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').innerText = 'Submit Advice & Resolve Ticket';
+        }
+    }
+
+    function submitRecommendation(event) {
+        event.preventDefault();
+        const id = document.getElementById('submitTicketId').value;
+        const text = document.getElementById('expertText').value;
+        
+        fetch('/ticket/expert-resolve', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ ticket_id: id, recommendation: text })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update local DB
+                ticketsDb[id].status = 'Resolved';
+                ticketsDb[id].expert_recommendation = text;
+                
+                // Update badge and controls
+                document.getElementById('detailStatus').innerText = 'Resolved';
+                document.getElementById('detailStatus').className = 'badge badge-secondary';
+                document.getElementById('expertText').readOnly = true;
+                document.getElementById('submitBtn').disabled = true;
+                document.getElementById('submitBtn').innerText = 'Resolved by Expert';
+                
+                // Update lists
+                const listBadge = document.getElementById('status-badge-' + id);
+                if (listBadge) {
+                    listBadge.innerText = 'Resolved';
+                    listBadge.className = 'badge badge-secondary';
+                }
+                const listItem = document.getElementById('ticket-item-' + id);
+                if (listItem) {
+                    listItem.classList.add('bg-light', 'text-muted');
+                }
+                
+                alert('Expert recommendation submitted successfully! Notification sent to farmer.');
+            } else {
+                alert('Error submitting recommendation: ' + data.error);
+            }
+        })
+        .catch(err => {
+            alert('Error communicating with server: ' + err);
+        });
+    }
+</script>
+
+{% endblock %}

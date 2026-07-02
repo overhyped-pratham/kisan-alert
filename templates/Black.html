@@ -6,12 +6,12 @@
 -->
 <html>
 	<head>
-		<title>Black Soil</title>
-		<link rel = "shortcut icon" type="image" href="/static/css/images/Clay_2.jpg">
+			<title>Black Soil</title>
+			<link rel="shortcut icon" type="image" href="{{ url_for('static', filename='images/planting.ico') }}">
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="static/css/Black.css" />
-		<noscript><link rel="stylesheet" href="static/css/noscript.css" /></noscript>
+			<meta name="viewport" content="width=device-width, initial-scale=1" />
+			<link rel="stylesheet" href="{{ url_for('static', filename='css/Black.css') }}" />
+			<noscript><link rel="stylesheet" href="{{ url_for('static', filename='css/noscript.css') }}" /></noscript>
 		
 	</head>
 	<body class="is-preload">
@@ -26,21 +26,21 @@
 						
 						
 						<p>You can Plant below crops:- { Virginia, Wheat , Jowar,Millets,Linseed,Castor,Sunflower } </p>
-					</br>
+					<br>
 						<p>काळ्या माती मध्ये तुम्ही ही पिके घेऊ शकता:- { व्हर्जिनिया, गहू, ज्वारी, मिलेट्स, बिसीड, एरंडेल, सूर्यफूल } </p>
 						
-					</br>
+					<br>
 						
 						<p>काली मिटटी में आप यह फसलं ले सकते है ।:- { वर्जीनिया, गेहूं, ज्वार, बाजरा, अलसी, अरंडी, सूरजमुखी } </p>
-					</br>
+					<br>
 						
 						<p>કાળી જમીનમાં તમે આ પાક લઈ શકો છો ।:- { વર્જિનિયા, ઘઉં, જુવાર, મિલેટ્સ, અળસી, એરંડા, સૂર્યમુખી } </p>
 
-					</br>
+					<br>
 						
 						<p>கருப்பு மண்ணில் நீங்கள் இந்த பயிர்களை எடுக்கலாம் ।:- { வர்ஜீனியா, கோதுமை, ஜோவர், தினை, லின்சீட், ஆமணக்கு, சூரியகாந்தி } </p>
 
-					</br>
+					<br>
 						
 						<p>ಕಪ್ಪು ಮಣ್ಣಿನಲ್ಲಿ ನೀವು ಈ ಬೆಳೆಗಳನ್ನು ತೆಗೆದುಕೊಳ್ಳಬಹುದು ।: -{ ವರ್ಜೀನಿಯಾ, ಗೋಧಿ, ಜೋವರ್, ರಾಗಿ, ಲಿನ್‌ಸೀಡ್, ಕ್ಯಾಸ್ಟರ್, ಸೂರ್ಯಕಾಂತಿ } </p>
 						<nav>
@@ -58,10 +58,8 @@
 			</div>
 		</div>
 		<script>
-			window.onload = function() { document.body.classList.remove('is-preload'); }
-			window.ontouchmove = function() { return false; }
-			window.onorientationchange = function() { document.body.scrollTop = 0; }
-		</script>
+				window.onload = function() { document.body.classList.remove('is-preload'); }
+			</script>
 
 	</body>
 </html>

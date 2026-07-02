@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - ArogyaKrishi</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/planting.ico') }}"/>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style1.css') }}">
     <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
 </head>
@@ -13,32 +15,31 @@
     <header>
         <nav class="navbar">
             <span class="hamburger-btn material-symbols-rounded">menu</span>
-            <a href="#" class="logo">
-                <img src="{{ url_for('static', filename='images/kisan.jpg') }}" alt="FarmConnect Logo">
+            <a href="{{ url_for('main.index') }}" class="logo">
+                <img src="{{ url_for('static', filename='images/kisan.jpg') }}" alt="KrishiSaar Logo">
                 <h2>ArogyaKrishi</h2>
             </a>
             <div id="google_translate_element"></div>
             <ul class="links">
                 <span class="close-btn material-symbols-rounded">close</span>
-                <li><a href="/">Home</a></li>
-        
+                <li><a href="{{ url_for('main.index') }}">Home</a></li>
+                <li><a href="{{ url_for('auth.register') }}" id="signup-link">Signup</a></li>
             </ul>
- 
         </nav>
     </header>
 
     <div class="blur-bg-overlay"></div>
     <div class="form-popup show-login">
-        
+
         <div class="form-box login">
             <div class="form-details">
-                 
                 <h2>Welcome Back</h2>
                 <p>Please log in using your personal information to stay connected with us.</p>
             </div>
             <div class="form-content">
                 <h2>LOGIN</h2>
-                <form action="{{ url_for('login') }}" method="POST">
+                <form action="{{ url_for('auth.login') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="input-field">
                         <i class="fas fa-envelope"></i>
                         <input type="email" name="email" placeholder="Email" required>
@@ -53,7 +54,7 @@
                     <button type="submit" class="btn">Log In</button>
                     <div class="bottom-link">
                         Don't have an account?
-                        <a href="/signup" id="signup-link">Signup</a>
+                        <a href="{{ url_for('auth.register') }}" id="signup-link">Signup</a>
                     </div>
                     {% if error %}
                         <div class="error-message">{{ error }}</div>
@@ -72,7 +73,5 @@
         }
     </script>
     <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-    <script src="https://cdn.botpress.cloud/webchat/v2.1/inject.js"></script>
-<script src="https://mediafiles.botpress.cloud/b87543e6-fc32-417f-b0be-739c0167b0df/webchat/v2.1/config.js"></script>
 </body>
 </html>

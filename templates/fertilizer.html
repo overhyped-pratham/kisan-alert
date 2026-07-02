@@ -1,8 +1,8 @@
 {% extends 'layout.html' %} {% block body %}
 
 <style>
-  html body {
-    background-color: rgb(206, 206, 228);
+  body {
+    background: linear-gradient(135deg, #f4f9f4 0%, #e8f5e9 100%);
   }
 </style>
 <!--Form Section-->
@@ -14,15 +14,16 @@
 
 <div
   style="
-    width: 350px;
-    height: 40rem;
+    max-width: 400px;
+    width: 90%;
     margin: 0px auto;
     color: black;
     border-radius: 25px;
     padding: 10px 10px;
   "
 >
-  <form method="POST" action="{{ url_for('fert_recommend') }}">
+  <form method="POST" action="{{ url_for('fertilizer.fertilizer_predict') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-group">
       <label for="Nitrogen" style="font-size: 17px"><b>Nitrogen</b></label>
       <input
@@ -30,6 +31,8 @@
         class="form-control"
         id="Nitrogen"
         name="nitrogen"
+        min="0"
+        max="200"
         placeholder="Enter the value (example:50)"
         style="font-weight: bold"
         required
@@ -44,6 +47,8 @@
         class="form-control"
         id="Phosphorous"
         name="phosphorous"
+        min="0"
+        max="200"
         placeholder="Enter the value (example:50)"
         style="font-weight: bold"
         required
@@ -51,29 +56,19 @@
     </div>
 
     <div class="form-group">
-      <label for="Pottasium" style="font-size: 17px"><b>Pottasium</b></label>
+      <label for="Potassium" style="font-size: 17px"><b>Potassium</b></label>
       <input
         type="number"
         class="form-control"
-        id="Pottasium"
-        name="pottasium"
+        id="Potassium"
+        name="potassium"
+        min="0"
+        max="250"
         placeholder="Enter the value (example:50)"
         style="font-weight: bold"
         required
       />
     </div>
-    <!-- <div class="form-group">
-      <label for="ph" style="font-size: 17px"><b>ph level</b></label>
-      <input
-        type="text"
-        class="form-control"
-        id="ph"
-        name="ph"
-        placeholder="Enter the value"
-        style="font-weight: bold"
-        required
-      />
-    </div> -->
     <div class="form-group">
       <label for="crop" style="font-size: 17px"
         ><b>Crop you want to grow</b></label

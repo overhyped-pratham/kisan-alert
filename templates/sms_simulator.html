@@ -1,0 +1,157 @@
+{% extends 'layout.html' %}
+{% block body %}
+
+<!-- Link to custom KrishiSaar styles -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/krishisaar.css') }}" />
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="ks-glass-card">
+                <div class="text-center mb-4">
+                    <h2 class="ks-gradient-text"><i class="fas fa-sms"></i> SMS Advisory Simulator</h2>
+                    <p class="text-muted">Simulate a feature-phone SMS interaction. Ask about crop recommendations or crop diseases.</p>
+                </div>
+                
+                <!-- Phone Wrapper -->
+                <div style="background: #0f1a15; border: 12px solid #2c3e50; border-radius: 36px; height: 550px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.3);">
+                    <!-- Phone Status Bar -->
+                    <div style="background: #15251e; color: #7f8c8d; font-size: 11px; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <span>KrishiSaar Network</span>
+                        <span><i class="fas fa-signal"></i> <i class="fas fa-battery-three-quarters"></i> 12:00 PM</span>
+                    </div>
+                    
+                    <!-- Phone Header -->
+                    <div style="background: #1b4d3e; color: white; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(255,255,255,0.2); width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center;">
+                            <i class="fas fa-leaf" style="color: #2ecc71;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 14px;">51969 (KrishiSaar AI)</div>
+                            <span style="font-size: 11px; color: #2ecc71;">• Online Advisory</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Message Body -->
+                    <div id="smsMessageBody" style="flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #13221b;">
+                        <!-- Initial System Message -->
+                        <div style="align-self: flex-start; background: #1b2e25; color: #cbd5e1; padding: 12px 16px; border-radius: 16px; border-bottom-left-radius: 4px; max-width: 85%; font-size: 13px; line-height: 1.4; border: 1px solid rgba(255,255,255,0.05);">
+                            <strong>KrishiSaar AI Advisory:</strong><br>
+                            Send queries in English or Indic languages. Examples:<br>
+                            - "COTTON LEAF SPOTS"<br>
+                            - "RECOMMEND CROP"<br>
+                            - "WHEAT DRY LEAF"
+                        </div>
+                    </div>
+                    
+                    <!-- Input Bar -->
+                    <div style="padding: 12px; background: #15251e; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 8px;">
+                        <input type="text" id="smsInput" class="form-control" placeholder="Type SMS here..." style="background: #1e352b; border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 20px; font-size: 14px;" onkeydown="if(event.key === 'Enter') sendSMS()">
+                        <button class="btn btn-success" style="border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; justify-content: center; align-items: center;" onclick="sendSMS()">
+                            <i class="fas fa-paper-plane" style="font-size: 14px;"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-link text-success"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function sendSMS() {
+        const input = document.getElementById('smsInput');
+        const text = input.value.trim();
+        if (!text) return;
+        
+        // Append user message
+        appendMessage(text, 'user');
+        input.value = '';
+        
+        // Add fake typing indicator
+        const typingId = appendTypingIndicator();
+        
+        // Send to backend API
+        fetch('/sms/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: text })
+        })
+        .then(response => response.json())
+        .then(data => {
+            removeTypingIndicator(typingId);
+            appendMessage(data.reply, 'bot');
+        })
+        .catch(err => {
+            removeTypingIndicator(typingId);
+            appendMessage("Error: Could not deliver SMS message. Check connection.", 'bot');
+        });
+    }
+    
+    function appendMessage(text, sender) {
+        const body = document.getElementById('smsMessageBody');
+        const msgDiv = document.createElement('div');
+        msgDiv.style.maxWidth = '85%';
+        msgDiv.style.padding = '12px 16px';
+        msgDiv.style.borderRadius = '16px';
+        msgDiv.style.fontSize = '13px';
+        msgDiv.style.lineHeight = '1.4';
+
+        if (sender === 'user') {
+            msgDiv.style.alignSelf = 'flex-end';
+            msgDiv.style.background = '#2ecc71';
+            msgDiv.style.color = '#0f1a15';
+            msgDiv.style.borderBottomRightRadius = '4px';
+            msgDiv.innerHTML = `<strong>Farmer:</strong><br>${escapeHtml(text)}`;
+        } else {
+            msgDiv.style.alignSelf = 'flex-start';
+            msgDiv.style.background = '#1b2e25';
+            msgDiv.style.color = '#cbd5e1';
+            msgDiv.style.borderBottomLeftRadius = '4px';
+            msgDiv.style.border = '1px solid rgba(255,255,255,0.05)';
+            msgDiv.innerHTML = `<strong>KrishiSaar:</strong><br>${escapeHtml(text).replace(/\n/g, '<br>')}`;
+        }
+
+        body.appendChild(msgDiv);
+        body.scrollTop = body.scrollHeight;
+    }
+
+    // Sanitize text before injecting into innerHTML (prevents XSS)
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+    
+    function appendTypingIndicator() {
+        const body = document.getElementById('smsMessageBody');
+        const typingDiv = document.createElement('div');
+        typingDiv.id = 'typing-' + Date.now();
+        typingDiv.style.alignSelf = 'flex-start';
+        typingDiv.style.background = '#1b2e25';
+        typingDiv.style.color = '#7f8c8d';
+        typingDiv.style.padding = '10px 16px';
+        typingDiv.style.borderRadius = '16px';
+        typingDiv.style.fontSize = '12px';
+        typingDiv.innerHTML = 'Delivering...';
+        body.appendChild(typingDiv);
+        body.scrollTop = body.scrollHeight;
+        return typingDiv.id;
+    }
+    
+    function removeTypingIndicator(id) {
+        const element = document.getElementById(id);
+        if (element) element.remove();
+    }
+</script>
+
+{% endblock %}

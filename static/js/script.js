@@ -7,24 +7,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const loginLink = document.querySelector("#login-link");
     const signupLink = document.querySelector("#signup-link");
 
-    console.log({
-        hamburgerBtn,
-        closeBtn,
-        links,
-        blurOverlay,
-        formPopup,
-        loginLink,
-        signupLink
-    });
-
     if (hamburgerBtn && closeBtn && links && blurOverlay && formPopup && loginLink && signupLink) {
         hamburgerBtn.addEventListener("click", () => {
-            links.classList.toggle("active");
+            links.classList.toggle("show-menu");
             blurOverlay.classList.toggle("active");
         });
 
         closeBtn.addEventListener("click", () => {
-            links.classList.remove("active");
+            links.classList.remove("show-menu");
             blurOverlay.classList.remove("active");
             formPopup.classList.remove("show-popup");
         });
@@ -53,7 +43,5 @@ document.addEventListener("DOMContentLoaded", () => {
                 blurOverlay.classList.remove("active");
             }
         });
-    } else {
-        console.warn("One or more elements not found in the DOM");
     }
 });

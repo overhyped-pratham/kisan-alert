@@ -1,6 +1,57 @@
-# Start of Selection
+# =============================================
+# .gitignore — ArogyaKrishi
+# =============================================
+
+# --- Python ---
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+
+# --- Environment & Secrets ---
 .env
+*.env
+
+# --- Database (SQLite) ---
+instance/*.db
+instance/*.db-journal
+
+# --- Uploads (user-generated content) ---
+uploads/*
+
+# Keep .gitkeep so dirs aren't empty
+!uploads/.gitkeep
+!instance/.gitkeep
+
+# --- Large model files (use HuggingFace/Drive instead) ---
+model/soilnet_hf/
+model/*.h5
+model/*.keras
+model/*.hdf5
+model/*.pt
+model/*.pth
+
+# Keep the small pickle models (they're needed and small)
+!model/DecisionTree.pkl
+!model/crop_disease_prediction_model_using_numeric_values.pkl
+
+# --- Jupyter checkpoints ---
+.ipynb_checkpoints/
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+
+# --- Logs / Temp ---
+*.log
 reboot.json
-# End of Selection
-config.py
