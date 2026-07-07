@@ -9,6 +9,7 @@ from models.disease_log import DiseaseLog
 from models.weather_alert import WeatherAlert
 from models.support_ticket import SupportTicket
 from models.sensor_data import SensorData
+from models.sms_log import SmsLog
 
 __all__ = [
     'User',
@@ -17,4 +18,5 @@ __all__ = [
     'WeatherAlert',
     'SupportTicket',
     'SensorData',
+    'SmsLog',
 ]

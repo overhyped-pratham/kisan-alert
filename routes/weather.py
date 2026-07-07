@@ -90,6 +90,13 @@ def generate_weather_alerts():
             message=alert['message'],
         )
         db.session.add(db_alert)
+        
+        # Trigger SMS alert to farmer if phone number exists
+        if current_user.phone:
+            from services.sms_service import send_farmer_sms
+            sms_text = f"ArogyaKrishi Warning: {alert['type']} - {alert['message']}"
+            send_farmer_sms(current_user, sms_text, alert_type="weather")
+
     db.session.commit()
 
     return jsonify(alerts)

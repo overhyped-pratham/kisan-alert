@@ -20,6 +20,7 @@ python-dotenv==1.0.1
 
 # --- Database ---
 SQLAlchemy==2.0.36
+psycopg2-binary>=2.9.9    # PostgreSQL driver (Supabase)
 
 # --- Data & ML ---
 numpy>=1.26.0
@@ -38,6 +39,19 @@ transformers>=4.39.0
 keras>=3.4.0
 jax[cpu]>=0.4.20
 h5py>=3.9.0
+
+# --- SMS Gateway ---
+twilio>=9.0.0             # Twilio SMS (primary)
+
+# --- AI / LLM ---
+groq>=0.9.0               # Groq API (Whisper STT + LLM)
+google-generativeai>=0.7.0 # Gemini AI
+
+# --- Voice / STT ---
+elevenlabs>=1.0.0          # ElevenLabs Scribe STT + TTS
+
+# --- Background Scheduler (auto alerts) ---
+APScheduler>=3.10.0
 
 # --- Deployment ---
 gunicorn>=21.0.0

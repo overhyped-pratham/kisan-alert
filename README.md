@@ -323,30 +323,53 @@ HUGGINGFACE_LOGIN_TOKEN=YOUR_HUGGING_FACE_TOKEN
 
 <p>7. Install all dependencies </p>
 
-```
+```bash
 pip install -r requirements.txt
-
 ```
 
 <p>8. Run the Project</p>
 
+#### Modern React SPA Frontend (Development Mode)
+To run and hot-reload the React frontend with Vite:
+```bash
+cd frontend
+npm install
+npm run dev
 ```
-python app.py 
+Open `http://localhost:5173` in your browser. All API requests are proxied automatically to the Flask backend on port `5000`.
+
+#### Production / Deploy-Ready Build (Single Port Hosting)
+To bundle the React frontend and serve it directly from Flask:
+1. Compile the React app:
+   ```bash
+   cd frontend
+   npm install
+   npm run build
+   ```
+2. Start the Flask backend:
+   ```bash
+   # Go back to project root
+   cd ..
+   python app.py
+   ```
+3. Open `http://localhost:5000/app` to access the React SPA directly.
+All static assets and routing are served from a single server (port `5000`), preventing any CORS issues.
+
+#### Docker Build
+To build and deploy the complete application (SPA + Backend) inside a self-contained Docker container:
+```bash
+docker build -t arogyakrishi .
+docker run -p 5000:5000 arogyakrishi
 ```
 
 ## 📈 Feasibility Analysis:
-
-•	**High Feasibility:** Advanced ML models and cloud deployment enable real-time disease prediction.
-
-•	**Scalability:** Supports multilingual features
-
-•	**Personalized Alerts**: Farmers get alerts based on crop type, region, and disease severity.
+•  **High Feasibility:** Advanced ML models and cloud deployment enable real-time disease prediction.
+•  **Scalability:** Supports multilingual features
+•  **Personalized Alerts**: Farmers get alerts based on crop type, region, and disease severity.
 
 ## ⚓ Potential Challenges & Risks:
-
-•	**Data Quality:** Poor data leads to inaccurate predictions
-
-•	**Accuracy of AI Models:** Risk of false positives and false negatives cases.
+•  **Data Quality:** Poor data leads to inaccurate predictions
+•  **Accuracy of AI Models:** Risk of false positives and false negatives cases.
 
 •	**Environmental Variability:** Presence of Diverse conditions. Viability Analysis:
 

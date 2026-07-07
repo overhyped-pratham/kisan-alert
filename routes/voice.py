@@ -6,6 +6,9 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_required
 from services.voice_service import generate_voice_reply
 from services.elevenlabs_service import transcribe_audio
+from services.groq_stt_service import transcribe_audio_groq
+from services.google_stt_service import transcribe_audio_google
+from services.hf_whisper_service import transcribe_audio_hf
 
 voice = Blueprint('voice', __name__)
 
@@ -15,7 +18,7 @@ voice = Blueprint('voice', __name__)
 def voice_assistant_query():
     """Process a voice/text query and return an AI response."""
     data = request.json or {}
-    query = data.get('query', '')
+    query = data.get('query') or data.get('question', '')
     language = data.get('language', 'en')
 
     reply = generate_voice_reply(query, language)
@@ -26,14 +29,14 @@ def voice_assistant_query():
 @login_required
 def voice_transcribe():
     """
-    Transcribe audio to text using ElevenLabs Scribe STT.
+    Transcribe audio to text.
 
-    Accepts multipart/form-data with:
-        - audio: the audio file (webm/wav/mp3)
-        - language: optional ISO language code (en, hi, mr, te, ta, kn, gu)
-
-    Falls back to instructing the client to use the browser-native
-    Web Speech API when the service is unavailable.
+    Fallback chain:
+      1. Google Cloud STT  (cloud, best accuracy, needs API enabled)
+      2. Groq Whisper      (cloud, free, fast, multilingual)
+      3. HuggingFace local (offline, whisper-tiny, WAV only)
+      4. ElevenLabs Scribe (cloud, needs API key)
+      5. Browser Web Speech API (client-side)
     """
     if 'audio' not in request.files:
         return jsonify({
@@ -44,11 +47,9 @@ def voice_transcribe():
 
     audio_file = request.files['audio']
     language = request.form.get('language', 'en')
-
-    # Determine MIME type from the uploaded file
     mime_type = audio_file.mimetype or 'audio/webm'
-
     audio_bytes = audio_file.read()
+
     if not audio_bytes:
         return jsonify({
             'success': False,
@@ -56,7 +57,23 @@ def voice_transcribe():
             'use_fallback': True,
         }), 400
 
-    text = transcribe_audio(audio_bytes, mime_type=mime_type, language_code=language)
+    # 1. Google Cloud STT
+    text = transcribe_audio_google(audio_bytes, mime_type=mime_type, language_code=language)
+
+    # 2. Groq Whisper
+    if not text:
+        print("[STT] Trying Groq Whisper...")
+        text = transcribe_audio_groq(audio_bytes, mime_type=mime_type, language_code=language)
+
+    # 3. HuggingFace local Whisper (WAV only, fully offline)
+    if not text:
+        print("[STT] Trying local HuggingFace Whisper...")
+        text = transcribe_audio_hf(audio_bytes, mime_type=mime_type, language_code=language)
+
+    # 4. ElevenLabs Scribe
+    if not text:
+        print("[STT] Trying ElevenLabs Scribe...")
+        text = transcribe_audio(audio_bytes, mime_type=mime_type, language_code=language)
 
     if text:
         return jsonify({'success': True, 'text': text})
@@ -64,6 +81,6 @@ def voice_transcribe():
     # Graceful fallback — client should use browser Web Speech API
     return jsonify({
         'success': False,
-        'error': 'Speech-to-text service unavailable. Using browser fallback.',
+        'error': 'Cloud Speech-to-text services unavailable. Using browser fallback.',
         'use_fallback': True,
     }), 200

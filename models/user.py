@@ -17,6 +17,8 @@ class User(UserMixin, db.Model):
     preferred_language = db.Column(db.String(10), default='en')
     district = db.Column(db.String(100), default='Pune')
     village = db.Column(db.String(100), default='Haveli')
+    farm_size = db.Column(db.String(50), default='5 Acres')
+    crop_type = db.Column(db.String(100), default='Wheat')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships

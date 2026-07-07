@@ -9,14 +9,13 @@ __pycache__/
 *.so
 *.egg-info/
 *.egg
-dist/
 build/
 
 # --- Environment & Secrets ---
 .env
 *.env
 
-# --- Database (SQLite) ---
+# --- Database (SQLite local dev) ---
 instance/*.db
 instance/*.db-journal
 
@@ -39,6 +38,11 @@ model/*.pth
 !model/DecisionTree.pkl
 !model/crop_disease_prediction_model_using_numeric_values.pkl
 
+# --- Frontend build artifacts ---
+frontend/dist/
+frontend/node_modules/
+node_modules/
+
 # --- Jupyter checkpoints ---
 .ipynb_checkpoints/
 
@@ -55,3 +59,5 @@ desktop.ini
 # --- Logs / Temp ---
 *.log
 reboot.json
+temp_*.wav
+temp_*.mp3

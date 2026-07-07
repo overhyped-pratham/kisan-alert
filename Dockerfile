@@ -1,20 +1,52 @@
-# Use the official Python image from the Docker Hub
-FROM python:3.9-slim
+# =============================================
+# Dockerfile — ArogyaKrishi (KrishiSaar AI)
+# Two-stage build: React SPA + Flask backend
+# =============================================
 
-# Set the working directory
-WORKDIR /Apna_kisan_MVP
+# --- Stage 1: Build React SPA ---
+FROM node:20-slim AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci --prefer-offline
+COPY frontend/ ./
+RUN npm run build
 
-# Copy the requirements file
+# --- Stage 2: Python backend ---
+FROM python:3.11-slim
+WORKDIR /app
+
+# System deps (psycopg2 needs libpq, torch needs libgomp)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    libgomp1 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python dependencies
 COPY requirements.txt .
-
-# Install the dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code
+# Copy backend source
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 5000
+# Copy compiled React SPA from Stage 1
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
-# Command to run the application
-CMD ["python", "app.py"]
+# Create runtime directories
+RUN mkdir -p uploads instance
+
+# Environment defaults (override via Cloud Run env vars)
+ENV FLASK_ENV=production \
+    KERAS_BACKEND=jax \
+    PORT=8080
+
+EXPOSE 8080
+
+# Use gunicorn in production
+CMD exec gunicorn "app:create_app()" \
+    --bind 0.0.0.0:$PORT \
+    --workers 2 \
+    --threads 4 \
+    --timeout 180 \
+    --preload

@@ -38,24 +38,31 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     if csrf:
         csrf.init_app(app)
+    else:
+        @app.context_processor
+        def inject_csrf_token():
+            return dict(csrf_token=lambda: "")
 
     # --- Register all route blueprints ---
     register_blueprints(app)
-
-    # --- Exempt JSON API endpoints from CSRF (consumed via fetch, not forms) ---
-    if csrf:
-        # These blueprints handle fetch() calls with JSON payloads
-        csrf.exempt('weather')   # sensor/weather advisory endpoints
-        csrf.exempt('voice')     # voice assistant + STT
-        csrf.exempt('sms')       # SMS simulator
-        csrf.exempt('api')       # dashboard history-data JSON API
-        csrf.exempt('api_spa')   # React SPA JSON API (/api/*)
 
     # --- Create database tables (within app context) ---
     with app.app_context():
         # Import models so db.create_all detects them
         import models  # noqa: F401
         db.create_all()
+        # Schema migration fallback: dynamically add columns to User table if they do not exist
+        try:
+            db.session.execute(db.text("ALTER TABLE user ADD COLUMN farm_size VARCHAR(50) DEFAULT '5 Acres'"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        try:
+            db.session.execute(db.text("ALTER TABLE user ADD COLUMN crop_type VARCHAR(100) DEFAULT 'Wheat'"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
     # --- Load ML models and services at startup ---
     _load_services(app)
@@ -73,6 +80,10 @@ def _load_services(app):
         load_crop_models()
         load_disease_pipeline()
         load_soil_models()
+
+        # Start automatic alert scheduler (weather every 6h, morning advisory at 7 AM IST)
+        from services.alert_scheduler import start_scheduler
+        start_scheduler(app)
 
         # Print startup status
         print("\n" + "=" * 50)

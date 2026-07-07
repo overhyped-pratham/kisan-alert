@@ -74,60 +74,104 @@ def _estimate_weather(city_name):
 def get_weather_data(latitude, longitude):
     """Fetch weather by lat/lon. Returns dict or None on failure."""
     api_key = Config.OPEN_WEATHER_APIKEY
-    if not api_key or api_key == "YOUR_WEATHER_API_KEY":
-        # Fallback: use seasonal estimator with default region
-        temp, humidity = _estimate_weather('default')
-        return {
-            'temperature': temp,
-            'humidity': humidity,
-            'pressure': 1010,
-            'wind_speed': 8.5,
-            'rain': 0.0,
-        }
+    
+    # 1. Try OpenWeatherMap if key is present
+    if api_key and api_key != "YOUR_WEATHER_API_KEY":
+        url = (
+            f"https://api.openweathermap.org/data/2.5/weather"
+            f"?lat={latitude}&lon={longitude}&appid={api_key}&units=metric"
+        )
+        try:
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                return {
+                    'temperature': data['main']['temp'],
+                    'humidity': data['main']['humidity'],
+                    'pressure': data['main']['pressure'],
+                    'wind_speed': data['wind']['speed'],
+                    'rain': data.get('rain', {}).get('1h', 0.0),
+                }
+        except Exception as e:
+            print(f"OpenWeatherMap fetch failed, trying Open-Meteo fallback: {e}")
 
-    url = (
-        f"https://api.openweathermap.org/data/2.5/weather"
-        f"?lat={latitude}&lon={longitude}&appid={api_key}&units=metric"
-    )
+    # 2. Keyless Open-Meteo fallback
     try:
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m"
         response = requests.get(url, timeout=5)
         if response.status_code == 200:
             data = response.json()
+            current = data.get('current', {})
             return {
-                'temperature': data['main']['temp'],
-                'humidity': data['main']['humidity'],
-                'pressure': data['main']['pressure'],
-                'wind_speed': data['wind']['speed'],
-                'rain': data.get('rain', {}).get('1h', 0.0),
+                'temperature': current.get('temperature_2m', 28.0),
+                'humidity': current.get('relative_humidity_2m', 65.0),
+                'pressure': current.get('surface_pressure', 1010.0),
+                'wind_speed': current.get('wind_speed_10m', 8.5),
+                'rain': 0.0,
             }
     except Exception as e:
-        print(f"Weather API fetch failed: {e}")
-    return None
+        print(f"Open-Meteo fetch failed: {e}")
+
+    # 3. Final offline seasonal estimator fallback
+    temp, humidity = _estimate_weather('default')
+    return {
+        'temperature': temp,
+        'humidity': humidity,
+        'pressure': 1010,
+        'wind_speed': 8.5,
+        'rain': 0.0,
+    }
 
 
 def weather_fetch(city_name):
     """
     Fetch temperature and humidity for a city.
 
-    Returns (temp, humidity) or None on failure. Falls back to the
-    seasonal estimator when the API is unavailable.
+    Returns (temp, humidity) or None on failure. Falls back to keyless Open-Meteo
+    and finally to the offline seasonal estimator when the API is unavailable.
     """
     api_key = Config.OPEN_WEATHER_APIKEY
-    if not api_key or api_key == "YOUR_WEATHER_API_KEY":
-        return _estimate_weather(city_name)
+    
+    # 1. Try OpenWeatherMap if key is present
+    if api_key and api_key != "YOUR_WEATHER_API_KEY":
+        safe_city = quote(str(city_name).strip()[:100], safe='')
+        url = f"https://api.openweathermap.org/data/2.5/weather?appid={api_key}&q={safe_city}&units=metric"
+        try:
+            response = requests.get(url, timeout=5)
+            x = response.json()
+            if x.get("cod") != "404" and "main" in x:
+                y = x["main"]
+                temperature = round(y.get("temp", 0), 2)
+                humidity = y.get("humidity", 65)
+                return temperature, humidity
+        except Exception as e:
+            print(f"OpenWeatherMap city fetch failed, trying Open-Meteo fallback: {e}")
 
-    safe_city = quote(str(city_name).strip()[:100], safe='')
-    url = f"https://api.openweathermap.org/data/2.5/weather?appid={api_key}&q={safe_city}&units=metric"
+    # 2. Keyless Open-Meteo fallback (Geocoding + Forecast)
     try:
-        response = requests.get(url, timeout=5)
-        x = response.json()
-        if x.get("cod") != "404" and "main" in x:
-            y = x["main"]
-            temperature = round(y.get("temp", 0), 2)
-            humidity = y.get("humidity", 65)
-            return temperature, humidity
+        safe_city = quote(str(city_name).strip()[:100], safe='')
+        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={safe_city}&count=1"
+        geo_resp = requests.get(geo_url, timeout=5)
+        if geo_resp.status_code == 200:
+            geo_data = geo_resp.json()
+            results = geo_data.get('results', [])
+            if results:
+                lat = results[0].get('latitude')
+                lon = results[0].get('longitude')
+                
+                weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m"
+                w_resp = requests.get(weather_url, timeout=5)
+                if w_resp.status_code == 200:
+                    w_data = w_resp.json()
+                    current = w_data.get('current', {})
+                    temp = round(current.get('temperature_2m', 28.0), 2)
+                    humid = current.get('relative_humidity_2m', 65)
+                    return temp, humid
     except Exception as e:
-        print(f"Error fetching city weather: {e}")
+        print(f"Open-Meteo city fetch failed: {e}")
 
-    # Final fallback: seasonal estimator
+    # 3. Final offline seasonal estimator fallback
     return _estimate_weather(city_name)
+
+
+

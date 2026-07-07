@@ -17,12 +17,13 @@ def register():
         name = request.form['name']
         email = request.form['email']
         password = request.form['password']
+        phone = request.form.get('phone', '').strip()
 
         if User.query.filter_by(email=email).first():
             flash('Email address already registered.', 'error')
             return render_template('signup.html')
 
-        new_user = User(name=name, email=email)
+        new_user = User(name=name, email=email, phone=phone or None)
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()

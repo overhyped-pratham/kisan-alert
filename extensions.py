@@ -27,3 +27,13 @@ def load_user(user_id):
     from models.user import User
     return User.query.get(int(user_id))
 
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    from flask import request, jsonify, redirect, url_for, flash
+    if request.path.startswith('/api/') or request.path.startswith('/voice/'):
+        return jsonify({'error': 'Unauthorized. Please log in.'}), 401
+    flash('Please log in to access this page.', 'info')
+    return redirect(url_for('auth.login'))
+
+

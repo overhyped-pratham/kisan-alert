@@ -5,6 +5,7 @@ Crop recommendation service — ML model loading, prediction, and crop details.
 import os
 import pickle
 import numpy as np
+import pandas as pd
 
 from config import Config
 
@@ -18,9 +19,9 @@ rf_crop_recommendation_model_path = os.path.join(
     base_dir, 'model', 'crop_disease_prediction_model_using_numeric_values.pkl'
 )
 
-# ---------------------------------------------------------------------------
-# Crop class label mapping (int / string -> crop name)
-# ---------------------------------------------------------------------------
+# Feature names expected by the trained sklearn models
+CROP_FEATURE_NAMES = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']
+
 crop_class_label = {
     0: 'apple', 1: 'banana', 2: 'blackgram', 3: 'chickpea',
     4: 'coconut', 5: 'coffee', 6: 'cotton', 7: 'grapes',
@@ -158,7 +159,7 @@ def predict_crop(features, model_type='random_forest'):
     confidence = 0.85
     used_model_name = 'Random Forest Classifier'
 
-    arr = np.array([features])
+    arr = pd.DataFrame([features], columns=CROP_FEATURE_NAMES)
 
     if model_type == 'random_forest' and rf_crop_recommendation_model is not None:
         try:

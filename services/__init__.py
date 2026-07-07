@@ -21,6 +21,10 @@ from services.gemini_service import query_gemini
 from services.soil_service import load_soil_models, predict_soil
 from services.voice_service import generate_voice_reply, generate_sms_reply
 from services.elevenlabs_service import transcribe_audio
+from services.groq_stt_service import transcribe_audio_groq
+from services.google_stt_service import transcribe_audio_google
+from services.hf_whisper_service import transcribe_audio_hf
+from services.sms_service import send_farmer_sms
 
 __all__ = [
     'get_weather_data',
@@ -41,4 +45,8 @@ __all__ = [
     'generate_voice_reply',
     'generate_sms_reply',
     'transcribe_audio',
+    'transcribe_audio_groq',
+    'transcribe_audio_google',
+    'transcribe_audio_hf',
+    'send_farmer_sms',
 ]

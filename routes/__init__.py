@@ -16,6 +16,7 @@ def register_blueprints(app):
     from routes.expert import expert
     from routes.api import api
     from routes.api_spa import api_spa
+    from routes.alerts import alerts_bp
 
     app.register_blueprint(auth)
     app.register_blueprint(main)
@@ -28,3 +29,13 @@ def register_blueprints(app):
     app.register_blueprint(expert)
     app.register_blueprint(api)
     app.register_blueprint(api_spa, url_prefix='/api')
+    app.register_blueprint(alerts_bp)
+
+    from extensions import csrf
+    if csrf:
+        csrf.exempt(weather)
+        csrf.exempt(voice)
+        csrf.exempt(sms)
+        csrf.exempt(api)
+        csrf.exempt(api_spa)
+        csrf.exempt(alerts_bp)
