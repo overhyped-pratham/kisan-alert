@@ -68,3 +68,5 @@ static/images/
 uploads/*
 notebooks/
 !uploads/.gitkeep
+
+model/crop_disease_prediction_model_using_numeric_values.pkl
