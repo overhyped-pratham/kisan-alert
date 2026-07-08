@@ -60,6 +60,11 @@ def transcribe_audio_hf(audio_bytes, mime_type="audio/webm", language_code="en")
     Supports WAV/PCM audio only (no ffmpeg needed).
     Returns transcribed text string, or None if format is unsupported.
     """
+    import os
+    if os.environ.get('RENDER') == 'true' or os.environ.get('DISABLE_LOCAL_AI_MODELS') == 'true' or os.environ.get('FLASK_ENV') == 'production':
+        print("[HF Whisper] Production/Render detected. Skipping local Whisper to avoid Out of Memory.")
+        return None
+
     # Only WAV can be decoded without ffmpeg on the server
     if mime_type not in ("audio/wav", "audio/x-wav", "audio/wave"):
         print(f"[HF Whisper] Unsupported MIME type '{mime_type}' — WAV only. Skipping.")

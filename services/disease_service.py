@@ -8,11 +8,13 @@ image_processor_type (ConvNextFeatureExtractor instead of ResNetImageProcessor)
 that breaks auto-mapping in transformers >= 5.x.
 """
 
-import torch
-import torch.nn.functional as F
 from utils.disease import disease_dic
 from services.weather_service import get_weather_data
 from config import Config
+
+import os
+import io
+import base64
 
 # ---------------------------------------------------------------------------
 # Global model objects (loaded once at startup)
@@ -24,6 +26,13 @@ _disease_processor = None
 def load_disease_pipeline():
     """Load the ResNet-50 disease classifier model + image processor."""
     global _disease_model, _disease_processor
+
+    # Bypass local loading in memory-constrained production environments (like Render Free Tier)
+    if os.environ.get('RENDER') == 'true' or os.environ.get('FLASK_ENV') == 'production' or os.environ.get('DISABLE_LOCAL_AI_MODELS') == 'true':
+        print("[INFO] Production/Render detected. Bypassing local ResNet-50 model to save RAM (will use Gemini Vision).")
+        _disease_model = None
+        _disease_processor = None
+        return
 
     REPO = "SanketJadhav/PlantDiseaseClassifier-Resnet50"
 
@@ -61,9 +70,48 @@ def detect_disease(image):
         (disease_name, confidence) tuple.
     """
     if _disease_model is None or _disease_processor is None:
+        # Fallback to Gemini Vision API
+        print("[INFO] Using Gemini Vision for leaf disease detection...")
+        try:
+            from services.gemini_service import query_gemini
+
+            buffered = io.BytesIO()
+            image.save(buffered, format="JPEG")
+            img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+            supported_classes = list(disease_dic.keys())
+            prompt = (
+                "Analyze this plant leaf image carefully. Identify the crop and the disease.\n"
+                "You must match it to one of the supported classes in this list:\n"
+                f"{', '.join(supported_classes)}\n\n"
+                "Output ONLY the exact match key name (e.g. 'Apple___Apple_scab' or 'Tomato___healthy') from the list above and absolutely nothing else. No markdown, no quotes, no explanation."
+            )
+
+            reply = query_gemini(prompt, base64_image=img_base64, mime_type="image/jpeg")
+            if reply:
+                cleaned_reply = reply.strip().replace('`', '').replace('"', '').replace("'", "")
+                # Find matching key in the dictionary
+                for cls in supported_classes:
+                    if cls.lower() == cleaned_reply.lower():
+                        print(f"[INFO] Gemini detected disease match: {cls}")
+                        return cls, 0.95
+                
+                # Check for partial matches
+                for cls in supported_classes:
+                    if cleaned_reply.lower() in cls.lower() or cls.lower() in cleaned_reply.lower():
+                        print(f"[INFO] Gemini detected disease partial match: {cls}")
+                        return cls, 0.90
+            
+            print(f"[WARN] Gemini reply '{reply}' did not match any supported class.")
+        except Exception as ex:
+            print(f"Error in Gemini Vision fallback disease detection: {ex}")
+        
         return "Tomato___healthy", 0.90
 
     try:
+        import torch
+        import torch.nn.functional as F
+
         inputs = _disease_processor(image, return_tensors="pt")
         with torch.no_grad():
             outputs = _disease_model(**inputs)
