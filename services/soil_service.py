@@ -114,8 +114,41 @@ def predict_soil(image_path, model_type='soilnet'):
     # Try SoilNet Keras model first
     result = _predict_keras(image_path)
 
-    # Fallback to heuristic
+    # Try Gemini Vision fallback if Keras model is unavailable
+    if result is None:
+        try:
+            import base64
+            from services.gemini_service import query_gemini
+
+            with open(image_path, "rb") as f:
+                img_base64 = base64.b64encode(f.read()).decode("utf-8")
+
+            soil_classes = list(SOIL_TEMPLATES.values())  # [(name, template), ...]
+            class_names = [s[0] for s in soil_classes]   # ["Alluvial", "Black", "Clay", "Red"]
+
+            prompt = (
+                "Analyze this soil image carefully and classify it into one of these soil types: "
+                f"{', '.join(class_names)}.\n\n"
+                "Output ONLY the soil type name (one of: Alluvial, Black, Clay, Red) and nothing else."
+            )
+
+            # Detect image mime type
+            suffix = os.path.splitext(image_path)[-1].lower()
+            mime_type = "image/jpeg" if suffix in (".jpg", ".jpeg") else "image/png"
+
+            reply = query_gemini(prompt, base64_image=img_base64, mime_type=mime_type)
+            if reply:
+                cleaned = reply.strip().lower()
+                for idx, (name, template) in SOIL_TEMPLATES.items():
+                    if name.lower() in cleaned:
+                        print(f"[INFO] Gemini Vision soil classification: {name}")
+                        return (name, template)
+        except Exception as ex:
+            print(f"[WARN] Gemini Vision soil fallback failed: {ex}")
+
+    # Final fallback to RGB heuristic
     if result is None:
         result = _predict_heuristic(image_path)
 
     return SOIL_TEMPLATES.get(result, ("Alluvial", "Alluvial.html"))
+

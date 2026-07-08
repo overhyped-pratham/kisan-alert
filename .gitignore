@@ -21,12 +21,10 @@ instance/*.db-journal
 
 # --- Uploads (user-generated content) ---
 uploads/*
-
-# Keep .gitkeep so dirs aren't empty
 !uploads/.gitkeep
 !instance/.gitkeep
 
-# --- Large model files (use HuggingFace/Drive instead) ---
+# --- Large model files ---
 model/soilnet_hf/
 model/*.h5
 model/*.keras
@@ -34,7 +32,7 @@ model/*.hdf5
 model/*.pt
 model/*.pth
 
-# Keep the small pickle models (they're needed and small)
+# Keep both small pickle models — needed for crop prediction on server
 !model/DecisionTree.pkl
 !model/crop_disease_prediction_model_using_numeric_values.pkl
 
@@ -43,8 +41,13 @@ frontend/dist/
 frontend/node_modules/
 node_modules/
 
-# --- Jupyter checkpoints ---
+# --- Jupyter notebooks ---
+notebooks/
 .ipynb_checkpoints/
+
+# --- Large static assets ---
+static/css/images/
+static/images/
 
 # --- OS files ---
 .DS_Store
@@ -62,11 +65,3 @@ reboot.json
 temp_*.wav
 temp_*.mp3
 temp_kisan_alert_dash/
-
-static/css/images/
-static/images/
-uploads/*
-notebooks/
-!uploads/.gitkeep
-
-model/crop_disease_prediction_model_using_numeric_values.pkl
